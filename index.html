@@ -1408,11 +1408,15 @@
             });
 
             dbState.payments.filter(p => p.vendorId === vendor.id).forEach(p => {
-                rawTxns.push({ date: p.date, desc: `Payment via ${p.mode} (${p.reference || 'Ref'})`, debit: 0, credit: Number(p.amount) });
+                const linkedBill = dbState.bills.find(b => b.id === p.billId);
+                const billRef = linkedBill ? ` (Linked Bill #${linkedBill.billNo})` : ' (On Account)';
+                rawTxns.push({ date: p.date, desc: `Payment via ${p.mode}${billRef} [Ref: ${p.reference || 'N/A'}]`, debit: 0, credit: Number(p.amount) });
             });
 
             dbState.credits.filter(c => c.vendorId === vendor.id).forEach(c => {
-                rawTxns.push({ date: c.date, desc: `Credit Note #${c.creditNo} (${c.reason})`, debit: 0, credit: Number(c.amount) });
+                const linkedBill = dbState.bills.find(b => b.id === c.billId);
+                const billRef = linkedBill ? ` (Linked Bill #${linkedBill.billNo})` : '';
+                rawTxns.push({ date: c.date, desc: `Credit Note #${c.creditNo}${billRef} (${c.reason})`, debit: 0, credit: Number(c.amount) });
             });
 
             rawTxns.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -1480,15 +1484,6 @@
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
-        function confirmDownloadLedger(format) {
-            closeModal('ledgerFormatModal');
-            if (format === 'excel') {
-                downloadLedgerExcel();
-            } else if (format === 'pdf') {
-                downloadLedgerPDF();
-            }
-        }
-
         function downloadLedgerExcel() {
             const vendor = dbState.vendors.find(v => v.id === selectedVendorIdForLedger);
             if (!vendor) return;
@@ -1502,9 +1497,20 @@
             if (vendor.openingBalance !== 0) {
                 rawTxns.push({ date: '2026-04-01', desc: 'Opening Balance', debit: vendor.openingBalance > 0 ? vendor.openingBalance : 0, credit: vendor.openingBalance < 0 ? Math.abs(vendor.openingBalance) : 0 });
             }
-            dbState.bills.filter(b => b.vendorId === vendor.id).forEach(b => rawTxns.push({ date: b.billDate, desc: `Bill #${b.billNo}`, debit: Number(b.amount), credit: 0 }));
-            dbState.payments.filter(p => p.vendorId === vendor.id).forEach(p => rawTxns.push({ date: p.date, desc: `Payment - ${p.mode}`, debit: 0, credit: Number(p.amount) }));
-            dbState.credits.filter(c => c.vendorId === vendor.id).forEach(c => rawTxns.push({ date: c.date, desc: `Credit Note #${c.creditNo}`, debit: 0, credit: Number(c.amount) }));
+            dbState.bills.filter(b => b.vendorId === vendor.id).forEach(b => {
+                const brandStr = (b.brands || []).join(', ');
+                rawTxns.push({ date: b.billDate, desc: `Bill #${b.billNo} [Brands: ${brandStr}] (${b.notes || ''})`, debit: Number(b.amount), credit: 0 });
+            });
+            dbState.payments.filter(p => p.vendorId === vendor.id).forEach(p => {
+                const linkedBill = dbState.bills.find(b => b.id === p.billId);
+                const billRef = linkedBill ? ` (Linked Bill #${linkedBill.billNo})` : ' (On Account)';
+                rawTxns.push({ date: p.date, desc: `Payment via ${p.mode}${billRef} [Ref: ${p.reference || 'N/A'}]`, debit: 0, credit: Number(p.amount) });
+            });
+            dbState.credits.filter(c => c.vendorId === vendor.id).forEach(c => {
+                const linkedBill = dbState.bills.find(b => b.id === c.billId);
+                const billRef = linkedBill ? ` (Linked Bill #${linkedBill.billNo})` : '';
+                rawTxns.push({ date: c.date, desc: `Credit Note #${c.creditNo}${billRef} (${c.reason})`, debit: 0, credit: Number(c.amount) });
+            });
             rawTxns.sort((a, b) => new Date(a.date) - new Date(b.date));
 
             let runningBal = 0;
@@ -1517,7 +1523,7 @@
             if (ledgerToDate) displayTxns = displayTxns.filter(t => t.date <= ledgerToDate);
 
             displayTxns.forEach(t => {
-                csvContent += `"${t.date}","${t.desc}",${t.debit || 0},${t.credit || 0},${t.balance}\n`;
+                csvContent += `"${t.date}","${t.desc.replace(/"/g, '""')}",${t.debit || 0},${t.credit || 0},${t.balance}\n`;
             });
 
             const encodedUri = encodeURI(csvContent);
