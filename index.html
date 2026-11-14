@@ -27,6 +27,8 @@
             }
         }
     </script>
+    <!-- SheetJS Library for multi-sheet Excel export -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <!-- Inter Font -->
@@ -1486,6 +1488,10 @@
                             <i data-lucide="download" class="w-3.5 h-3.5"></i>
                             <span>Download Statement</span>
                         </button>
+                        <button onclick="downloadAllVendorsMultiSheetExcel()" title="Download All Vendors (Multi-Sheet Excel)" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
+                            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+                            <span>All Vendors Excel</span>
+                        </button>
                     </div>
                 </div>
                 <div class="flex-1 overflow-y-auto">
@@ -1591,6 +1597,68 @@
             link.click();
             document.body.removeChild(link);
             showToast('Excel statement downloaded for ' + vendor.name);
+        }
+
+        function downloadAllVendorsMultiSheetExcel() {
+            if (typeof XLSX === 'undefined') {
+                showToast('Excel export library loading... please try again in a moment.');
+                return;
+            }
+
+            const wb = XLSX.utils.book_new();
+
+            dbState.vendors.forEach(vendor => {
+                let rawTxns = [];
+                if (vendor.openingBalance !== 0) {
+                    rawTxns.push({ date: '2026-04-01', desc: 'Opening Balance', debit: vendor.openingBalance > 0 ? vendor.openingBalance : 0, credit: vendor.openingBalance < 0 ? Math.abs(vendor.openingBalance) : 0 });
+                }
+                dbState.bills.filter(b => b.vendorId === vendor.id).forEach(b => {
+                    const brandStr = (b.brands || []).join(', ');
+                    rawTxns.push({ date: b.billDate, desc: `Bill #${b.billNo} [Brands: ${brandStr}] (${b.notes || ''})`, debit: Number(b.amount), credit: 0 });
+                });
+                dbState.payments.filter(p => p.vendorId === vendor.id).forEach(p => {
+                    const linkedBill = dbState.bills.find(b => b.id === p.billId);
+                    const billRef = linkedBill ? ` (Linked Bill #${linkedBill.billNo})` : ' (On Account)';
+                    rawTxns.push({ date: p.date, desc: `Payment via ${p.mode}${billRef} [Ref: ${p.reference || 'N/A'}]`, debit: 0, credit: Number(p.amount) });
+                });
+                dbState.credits.filter(c => c.vendorId === vendor.id).forEach(c => {
+                    const linkedBill = dbState.bills.find(b => b.id === c.billId);
+                    const billRef = linkedBill ? ` (Linked Bill #${linkedBill.billNo})` : '';
+                    rawTxns.push({ date: c.date, desc: `Credit Note #${c.creditNo}${billRef} (${c.reason})`, debit: 0, credit: Number(c.amount) });
+                });
+                rawTxns.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+                let runningBal = 0;
+                rawTxns.forEach(t => {
+                    runningBal += (t.debit - t.credit);
+                    t.balance = runningBal;
+                });
+
+                let sheetData = [
+                    [`Vendor Ledger - ${vendor.name}`],
+                    [`Period: Beginning to Today`],
+                    [],
+                    ["Date", "Description", "Debit (INR)", "Credit (INR)", "Balance (INR)"]
+                ];
+
+                rawTxns.forEach(t => {
+                    sheetData.push([
+                        formatDateDDMMYYYY(t.date),
+                        t.desc,
+                        t.debit || 0,
+                        t.credit || 0,
+                        t.balance
+                    ]);
+                });
+
+                const ws = XLSX.utils.aoa_to_sheet(sheetData);
+                // Clean sheet name (Excel sheet names max 31 chars and no special chars like : \ / ? * [ ])
+                let safeSheetName = vendor.name.replace(/[:\\/?*\[\]]/g, '').substring(0, 31);
+                XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
+            });
+
+            XLSX.writeFile(wb, 'LalithaNaturals_AllVendors_Ledgers.xlsx');
+            showToast('All vendors multi-sheet Excel downloaded successfully');
         }
 
         function downloadLedgerPDF() {
