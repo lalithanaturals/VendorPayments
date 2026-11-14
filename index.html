@@ -87,15 +87,15 @@
                     </button>
                     <button onclick="switchTab('bills')" id="nav-bills" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer">
                         <i data-lucide="file-text" class="w-4 h-4 shrink-0"></i>
-                        <span class="hidden md:inline font-semibold">Bills Entry</span>
+                        <span class="hidden md:inline font-semibold">Bill Entry</span>
+                    </button>
+                    <button onclick="switchTab('credits')" id="nav-credits" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer">
+                        <i data-lucide="receipt" class="w-4 h-4 shrink-0"></i>
+                        <span class="hidden md:inline font-semibold">Credit Note</span>
                     </button>
                     <button onclick="switchTab('payments')" id="nav-payments" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer">
                         <i data-lucide="credit-card" class="w-4 h-4 shrink-0"></i>
                         <span class="hidden md:inline font-semibold">Payments</span>
-                    </button>
-                    <button onclick="switchTab('credits')" id="nav-credits" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 cursor-pointer">
-                        <i data-lucide="receipt" class="w-4 h-4 shrink-0"></i>
-                        <span class="hidden md:inline font-semibold">Credit Notes</span>
                     </button>
                 </nav>
 
@@ -231,7 +231,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Bills & Invoices</h2>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Record and track all vendor bills with attachments.</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Record and track all vendor bills with brand tags and attachments.</p>
                         </div>
                         <button onclick="openModal('billModal')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
@@ -243,7 +243,7 @@
                         <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
                             <div class="relative w-full sm:w-72">
                                 <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                                <input type="text" id="bill-search" oninput="renderBillsTable()" placeholder="Search bills..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                                <input type="text" id="bill-search" oninput="renderBillsTable()" placeholder="Search bills or brands..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
                             </div>
                             <div class="flex items-center space-x-2 w-full sm:w-auto">
                                 <select id="bill-filter-status" onchange="renderBillsTable()" class="w-full sm:w-auto px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
@@ -259,8 +259,9 @@
                                     <tr class="bg-slate-50/70 dark:bg-slate-800/40 text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
                                         <th class="p-3.5">Vendor</th>
                                         <th class="p-3.5">Bill No.</th>
-                                        <th class="p-3.5">Received</th>
+                                        <th class="p-3.5">Brands</th>
                                         <th class="p-3.5">Bill Date</th>
+                                        <th class="p-3.5">Received</th>
                                         <th class="p-3.5">Due Date</th>
                                         <th class="p-3.5 text-right">Amount</th>
                                         <th class="p-3.5 text-right">Balance</th>
@@ -439,14 +440,25 @@
                         <input type="text" id="bBillNo" required class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white" placeholder="INV-001">
                     </div>
                 </div>
-                <div class="grid grid-cols-3 gap-2.5">
-                    <div>
-                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Received Date *</label>
-                        <input type="date" id="bReceivedDate" required class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                <div>
+                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Brand Name(s) * (Select multiple brands if applicable)</label>
+                    <div id="bBrandContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Lalitha Naturals" checked class="rounded text-brand-600 focus:ring-brand-500"><span>Lalitha Naturals</span></label>
+                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Veda Pure" class="rounded text-brand-600 focus:ring-brand-500"><span>Veda Pure</span></label>
+                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Nature Harvest" class="rounded text-brand-600 focus:ring-brand-500"><span>Nature Harvest</span></label>
+                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Aura Organics" class="rounded text-brand-600 focus:ring-brand-500"><span>Aura Organics</span></label>
+                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Nilgiri Spices" class="rounded text-brand-600 focus:ring-brand-500"><span>Nilgiri Spices</span></label>
+                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Green Fields" class="rounded text-brand-600 focus:ring-brand-500"><span>Green Fields</span></label>
                     </div>
+                </div>
+                <div class="grid grid-cols-3 gap-2.5">
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bill Date *</label>
                         <input type="date" id="bBillDate" required class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 mb-1">Received Date *</label>
+                        <input type="date" id="bReceivedDate" required class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
                     </div>
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-500 mb-1">Due Date *</label>
@@ -592,6 +604,27 @@
         </div>
     </div>
 
+    <!-- Ledger Format Selection Modal -->
+    <div id="ledgerFormatModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-sm w-full p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <h3 class="text-base font-bold text-slate-900 dark:text-white">Download Ledger Format</h3>
+                <button onclick="closeModal('ledgerFormatModal')" class="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+            </div>
+            <p class="text-xs text-slate-500">Please select your preferred format for downloading the vendor statement:</p>
+            <div class="grid grid-cols-2 gap-3 pt-2">
+                <button onclick="confirmDownloadLedger('excel')" class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-emerald-500 bg-emerald-50/50 dark:bg-emerald-950/20 text-center transition group cursor-pointer">
+                    <i data-lucide="file-spreadsheet" class="w-6 h-6 text-emerald-600 mx-auto mb-2"></i>
+                    <span class="font-bold text-xs block text-slate-900 dark:text-white">Excel (CSV)</span>
+                </button>
+                <button onclick="confirmDownloadLedger('pdf')" class="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 bg-brand-50/50 dark:bg-brand-950/20 text-center transition group cursor-pointer">
+                    <i data-lucide="printer" class="w-6 h-6 text-brand-600 mx-auto mb-2"></i>
+                    <span class="font-bold text-xs block text-slate-900 dark:text-white">Print / PDF</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toast" class="fixed bottom-5 right-5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-4 py-2.5 rounded-xl shadow-xl flex items-center space-x-2 transform translate-y-20 opacity-0 transition-all duration-300 z-50 text-xs font-medium">
         <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
@@ -609,10 +642,10 @@
                 { id: 'v_3', name: 'Green Valley Spices', contactPerson: 'M. Venkat', phone: '9988776655', gstin: '37LMNSP9876M3ZX', openingBalance: 12500, address: 'APMC Yard, Vizianagaram' }
             ],
             bills: [
-                { id: 'b_1', vendorId: 'v_1', billNo: 'INV-2026-101', receivedDate: '2026-11-01', billDate: '2026-11-01', dueDate: '2026-11-15', amount: 25000, photo: '', notes: 'Raw Honey' },
-                { id: 'b_2', vendorId: 'v_2', billNo: 'VHE-892', receivedDate: '2026-11-05', billDate: '2026-11-04', dueDate: '2026-11-12', amount: 18400, photo: '', notes: 'Amla powder' },
-                { id: 'b_3', vendorId: 'v_3', billNo: 'GVS-450', receivedDate: '2026-11-10', billDate: '2026-11-08', dueDate: '2026-11-20', amount: 32000, photo: '', notes: 'Black pepper' },
-                { id: 'b_4', vendorId: 'v_1', billNo: 'INV-2026-115', receivedDate: '2026-11-12', billDate: '2026-11-12', dueDate: '2026-11-26', amount: 15000, photo: '', notes: 'Jaggery' }
+                { id: 'b_1', vendorId: 'v_1', billNo: 'INV-2026-101', brands: ['Lalitha Naturals'], receivedDate: '2026-11-01', billDate: '2026-11-01', dueDate: '2026-11-15', amount: 25000, photo: '', notes: 'Raw Honey' },
+                { id: 'b_2', vendorId: 'v_2', billNo: 'VHE-892', brands: ['Veda Pure', 'Lalitha Naturals'], receivedDate: '2026-11-05', billDate: '2026-11-04', dueDate: '2026-11-12', amount: 18400, photo: '', notes: 'Amla powder' },
+                { id: 'b_3', vendorId: 'v_3', billNo: 'GVS-450', brands: ['Nature Harvest'], receivedDate: '2026-11-10', billDate: '2026-11-08', dueDate: '2026-11-20', amount: 32000, photo: '', notes: 'Black pepper' },
+                { id: 'b_4', vendorId: 'v_1', billNo: 'INV-2026-115', brands: ['Lalitha Naturals', 'Aura Organics'], receivedDate: '2026-11-12', billDate: '2026-11-12', dueDate: '2026-11-26', amount: 15000, photo: '', notes: 'Jaggery' }
             ],
             payments: [
                 { id: 'p_1', vendorId: 'v_1', date: '2026-11-05', mode: 'Bank Transfer', reference: 'NEFT-984321', billId: 'b_1', amount: 10000, notes: 'Part payment' },
@@ -864,14 +897,17 @@
             const id = 'b_' + Date.now();
             const vendorId = document.getElementById('bVendorId').value;
             const billNo = document.getElementById('bBillNo').value;
-            const receivedDate = document.getElementById('bReceivedDate').value;
             const billDate = document.getElementById('bBillDate').value;
+            const receivedDate = document.getElementById('bReceivedDate').value;
             const dueDate = document.getElementById('bDueDate').value;
             const amount = parseFloat(document.getElementById('bAmount').value) || 0;
             const photo = document.getElementById('bPhotoBase64').value;
             const notes = document.getElementById('bNotes').value;
 
-            dbState.bills.push({ id, vendorId, billNo, receivedDate, billDate, dueDate, amount, photo, notes });
+            const brandCheckboxes = document.querySelectorAll('input[name="bBrands"]:checked');
+            const brands = Array.from(brandCheckboxes).map(cb => cb.value);
+
+            dbState.bills.push({ id, vendorId, billNo, brands, billDate, receivedDate, dueDate, amount, photo, notes });
             saveData();
             closeModal('billModal');
             showToast('Bill recorded successfully');
@@ -1255,11 +1291,9 @@
                             <span class="text-slate-400">To:</span>
                             <input type="date" id="ledger-to-date" value="${ledgerToDate}" onchange="setLedgerDateFilter()" class="bg-transparent border-none text-slate-900 dark:text-white text-[11px] focus:outline-none">
                         </div>
-                        <button onclick="downloadLedgerExcel()" title="Download Excel (CSV)" class="p-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 transition cursor-pointer">
-                            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i>
-                        </button>
-                        <button onclick="downloadLedgerPDF()" title="Print / PDF Statement" class="p-2 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 hover:bg-brand-100 transition cursor-pointer">
-                            <i data-lucide="printer" class="w-4 h-4"></i>
+                        <button onclick="openModal('ledgerFormatModal')" title="Download Statement" class="px-3 py-1.5 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 hover:bg-brand-100 text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
+                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                            <span>Download Statement</span>
                         </button>
                     </div>
                 </div>
@@ -1279,12 +1313,17 @@
                         </tbody>
                     </table>
                 </div>
-                <div class="p-3 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/40 flex justify-between items-center text-xs font-semibold">
-                    <span class="text-slate-500">Total Outstanding:</span>
-                    <span class="text-rose-600 text-sm font-bold">${formatCurrency(getVendorOutstanding(vendor.id))}</span>
-                </div>
             `;
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        }
+
+        function confirmDownloadLedger(format) {
+            closeModal('ledgerFormatModal');
+            if (format === 'excel') {
+                downloadLedgerExcel();
+            } else if (format === 'pdf') {
+                downloadLedgerPDF();
+            }
         }
 
         function downloadLedgerExcel() {
@@ -1338,7 +1377,8 @@
 
             let filtered = dbState.bills.filter(b => {
                 const vendor = dbState.vendors.find(v => v.id === b.vendorId);
-                const matchesSearch = b.billNo.toLowerCase().includes(search) || (vendor && vendor.name.toLowerCase().includes(search));
+                const brandStr = (b.brands || []).join(', ').toLowerCase();
+                const matchesSearch = b.billNo.toLowerCase().includes(search) || (vendor && vendor.name.toLowerCase().includes(search)) || brandStr.includes(search);
                 const bal = getBillBalance(b);
                 if (statusFilter === 'unpaid' && bal <= 0) return false;
                 if (statusFilter === 'paid' && bal > 0) return false;
@@ -1346,7 +1386,7 @@
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="10" class="p-6 text-center text-slate-400">No bills found</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-400">No bills found</td></tr>`;
                 return;
             }
 
@@ -1354,12 +1394,14 @@
                 const vendor = dbState.vendors.find(v => v.id === b.vendorId);
                 const bal = getBillBalance(b);
                 const isPaid = bal <= 0;
+                const brandTags = (b.brands || ['Lalitha Naturals']).map(br => `<span class="px-1.5 py-0.5 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 text-[10px] font-medium mr-1">${br}</span>`).join('');
                 return `
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                         <td class="p-3.5 font-semibold text-slate-900 dark:text-white">${vendor?.name || 'Unknown'}</td>
                         <td class="p-3.5 text-slate-600 dark:text-slate-300">#${b.billNo}</td>
-                        <td class="p-3.5 text-slate-500">${b.receivedDate}</td>
+                        <td class="p-3.5">${brandTags}</td>
                         <td class="p-3.5 text-slate-500">${b.billDate}</td>
+                        <td class="p-3.5 text-slate-500">${b.receivedDate}</td>
                         <td class="p-3.5 font-medium text-amber-600 dark:text-amber-400">${b.dueDate}</td>
                         <td class="p-3.5 text-right text-slate-900 dark:text-white">${formatCurrency(b.amount)}</td>
                         <td class="p-3.5 text-right font-bold ${isPaid ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(bal)}</td>
