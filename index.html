@@ -199,7 +199,7 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Vendors & Ledgers</h2>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Manage vendor profiles, filter ledgers by date, and download reports.</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Manage vendor profiles, filter by brand and vendor, and download reports.</p>
                         </div>
                         <button onclick="openModal('vendorModal')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
                             <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
@@ -207,18 +207,26 @@
                         </button>
                     </div>
 
+                    <!-- Vendor Filters & Brand Filter Bar -->
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div class="relative w-full sm:w-80">
+                            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                            <input type="text" id="vendor-search" oninput="renderVendorList()" placeholder="Search vendors..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                        </div>
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap">Filter Brand:</span>
+                            <select id="vendor-filter-brand" onchange="renderVendorList()" class="w-full sm:w-auto px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                                <option value="all">All Brands</option>
+                            </select>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-[700px] overflow-hidden">
-                            <div class="p-3.5 border-b border-slate-200 dark:border-slate-800">
-                                <div class="relative">
-                                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                                    <input type="text" id="vendor-search" oninput="renderVendorList()" placeholder="Search vendors..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
-                                </div>
-                            </div>
+                        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-[630px] overflow-hidden">
                             <div id="vendor-list-container" class="flex-1 divide-y divide-slate-100 dark:divide-slate-800 overflow-y-auto"></div>
                         </div>
 
-                        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-[700px] overflow-hidden">
+                        <div class="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col h-[630px] overflow-hidden">
                             <div id="vendor-ledger-view" class="flex flex-col h-full">
                                 <div class="flex-1 flex items-center justify-center text-slate-400 text-xs">Select a vendor to view ledger</div>
                             </div>
@@ -441,15 +449,13 @@
                     </div>
                 </div>
                 <div>
-                    <label class="block text-[11px] font-semibold text-slate-500 mb-1">Brand Name(s) * (Select multiple brands if applicable)</label>
-                    <div id="bBrandContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-slate-100 dark:bg-slate-800 rounded-xl">
-                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Lalitha Naturals" checked class="rounded text-brand-600 focus:ring-brand-500"><span>Lalitha Naturals</span></label>
-                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Veda Pure" class="rounded text-brand-600 focus:ring-brand-500"><span>Veda Pure</span></label>
-                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Nature Harvest" class="rounded text-brand-600 focus:ring-brand-500"><span>Nature Harvest</span></label>
-                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Aura Organics" class="rounded text-brand-600 focus:ring-brand-500"><span>Aura Organics</span></label>
-                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Nilgiri Spices" class="rounded text-brand-600 focus:ring-brand-500"><span>Nilgiri Spices</span></label>
-                        <label class="flex items-center space-x-2 text-xs cursor-pointer"><input type="checkbox" name="bBrands" value="Green Fields" class="rounded text-brand-600 focus:ring-brand-500"><span>Green Fields</span></label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-[11px] font-semibold text-slate-500">Brand Name(s) * (Select multiple or add new)</label>
+                        <button type="button" onclick="addNewBrandPrompt()" class="text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline flex items-center gap-1 cursor-pointer">
+                            <i data-lucide="plus-circle" class="w-3 h-3"></i> Add New Brand
+                        </button>
                     </div>
+                    <div id="bBrandContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-slate-100 dark:bg-slate-800 rounded-xl max-h-32 overflow-y-auto"></div>
                 </div>
                 <div class="grid grid-cols-3 gap-2.5">
                     <div>
@@ -633,7 +639,7 @@
 
     <!-- JavaScript Application Logic -->
     <script>
-        const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V2';
+        const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V3';
 
         let dbState = {
             vendors: [
@@ -641,6 +647,7 @@
                 { id: 'v_2', name: 'Veda Herbal Extracts', contactPerson: 'Anitha Reddy', phone: '9123456789', gstin: '37XYZDE5678L2ZW', openingBalance: 0, address: 'Industrial Estate, Gajuwaka' },
                 { id: 'v_3', name: 'Green Valley Spices', contactPerson: 'M. Venkat', phone: '9988776655', gstin: '37LMNSP9876M3ZX', openingBalance: 12500, address: 'APMC Yard, Vizianagaram' }
             ],
+            brands: ['Lalitha Naturals', 'Veda Pure', 'Nature Harvest', 'Aura Organics', 'Nilgiri Spices', 'Green Fields'],
             bills: [
                 { id: 'b_1', vendorId: 'v_1', billNo: 'INV-2026-101', brands: ['Lalitha Naturals'], receivedDate: '2026-11-01', billDate: '2026-11-01', dueDate: '2026-11-15', amount: 25000, photo: '', notes: 'Raw Honey' },
                 { id: 'b_2', vendorId: 'v_2', billNo: 'VHE-892', brands: ['Veda Pure', 'Lalitha Naturals'], receivedDate: '2026-11-05', billDate: '2026-11-04', dueDate: '2026-11-12', amount: 18400, photo: '', notes: 'Amla powder' },
@@ -666,10 +673,12 @@
 
         window.onload = function() {
             loadData();
+            if (!dbState.brands) dbState.brands = ['Lalitha Naturals', 'Veda Pure', 'Nature Harvest', 'Aura Organics', 'Nilgiri Spices', 'Green Fields'];
             if (localStorage.getItem('lalitha_theme') === 'dark') {
                 document.documentElement.classList.add('dark');
             }
             populateVendorDropdowns();
+            populateBrandDropdowns();
             switchTab('dashboard');
             lucide.createIcons();
         };
@@ -688,6 +697,7 @@
         function saveData() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(dbState));
             populateVendorDropdowns();
+            populateBrandDropdowns();
         }
 
         function showToast(msg) {
@@ -716,6 +726,7 @@
                     document.getElementById('bBillDate').value = new Date().toISOString().split('T')[0];
                     document.getElementById('bDueDate').value = new Date(Date.now() + 15*86400000).toISOString().split('T')[0];
                     clearBillPhoto();
+                    renderBillBrandCheckboxes();
                 }
                 if (modalId === 'paymentModal') {
                     document.getElementById('paymentForm').reset();
@@ -810,6 +821,41 @@
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<option value="">Select Vendor...</option>` + opts;
             });
+        }
+
+        function populateBrandDropdowns() {
+            const brandSelect = document.getElementById('vendor-filter-brand');
+            if (brandSelect) {
+                const currentVal = brandSelect.value;
+                brandSelect.innerHTML = `<option value="all">All Brands</option>` + dbState.brands.map(b => `<option value="${b}">${b}</option>`).join('');
+                brandSelect.value = currentVal || 'all';
+            }
+        }
+
+        function renderBillBrandCheckboxes() {
+            const container = document.getElementById('bBrandContainer');
+            if (!container) return;
+            container.innerHTML = dbState.brands.map((b, idx) => `
+                <label class="flex items-center space-x-2 text-xs cursor-pointer">
+                    <input type="checkbox" name="bBrands" value="${b}" ${idx === 0 ? 'checked' : ''} class="rounded text-brand-600 focus:ring-brand-500">
+                    <span class="truncate">${b}</span>
+                </label>
+            `).join('');
+        }
+
+        function addNewBrandPrompt() {
+            const newBrand = prompt('Enter new brand name:');
+            if (newBrand && newBrand.trim() !== '') {
+                const trimmed = newBrand.trim();
+                if (!dbState.brands.includes(trimmed)) {
+                    dbState.brands.push(trimmed);
+                    saveData();
+                    renderBillBrandCheckboxes();
+                    showToast(`Brand "${trimmed}" added successfully`);
+                } else {
+                    showToast('Brand already exists');
+                }
+            }
         }
 
         function updateVendorBillsDropdown() {
@@ -1185,28 +1231,48 @@
 
         function renderVendorList() {
             const search = document.getElementById('vendor-search').value.toLowerCase();
+            const brandFilter = document.getElementById('vendor-filter-brand').value;
             const container = document.getElementById('vendor-list-container');
-            const filtered = dbState.vendors.filter(v => v.name.toLowerCase().includes(search));
+
+            let filtered = dbState.vendors.filter(v => {
+                const matchesSearch = v.name.toLowerCase().includes(search);
+                if (!matchesSearch) return false;
+
+                if (brandFilter !== 'all') {
+                    const vendorBills = dbState.bills.filter(b => b.vendorId === v.id);
+                    const hasBrand = vendorBills.some(b => (b.brands || []).includes(brandFilter));
+                    if (!hasBrand) return false;
+                }
+                return true;
+            });
 
             if (filtered.length === 0) {
                 container.innerHTML = `<div class="p-4 text-center text-slate-400 text-xs">No vendors found</div>`;
                 return;
             }
 
-            if (!selectedVendorIdForLedger && filtered.length > 0) {
+            if (!selectedVendorIdForLedger || !filtered.some(v => v.id === selectedVendorIdForLedger)) {
                 selectedVendorIdForLedger = filtered[0].id;
             }
 
             container.innerHTML = filtered.map(v => {
                 const out = getVendorOutstanding(v.id);
                 const isSelected = v.id === selectedVendorIdForLedger;
+                const vendorBills = dbState.bills.filter(b => b.vendorId === v.id);
+                const vendorBrands = [...new Set(vendorBills.flatMap(b => b.brands || []))];
+
                 return `
                     <div onclick="selectVendorForLedger('${v.id}')" class="p-3.5 cursor-pointer transition ${isSelected ? 'bg-brand-50/60 dark:bg-brand-950/40 border-l-4 border-brand-600' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}">
                         <div class="flex items-center justify-between">
                             <h4 class="font-bold text-xs text-slate-900 dark:text-white">${v.name}</h4>
                             <span class="font-bold text-xs ${out > 0 ? 'text-rose-600' : 'text-emerald-600'}">${formatCurrency(out)}</span>
                         </div>
-                        <p class="text-[11px] text-slate-400 mt-0.5">${v.phone || 'No phone'} | GST: ${v.gstin || 'N/A'}</p>
+                        <div class="flex items-center justify-between mt-1">
+                            <p class="text-[11px] text-slate-400">${v.phone || 'No phone'} | GST: ${v.gstin || 'N/A'}</p>
+                        </div>
+                        <div class="flex flex-wrap gap-1 mt-1.5">
+                            ${vendorBrands.length > 0 ? vendorBrands.map(b => `<span class="px-1.5 py-0.2 rounded bg-slate-100 dark:bg-slate-800 text-[9px] font-medium text-slate-600 dark:text-slate-300">${b}</span>`).join('') : '<span class="text-[9px] text-slate-400">No brand tagged</span>'}
+                        </div>
                     </div>
                 `;
             }).join('');
@@ -1241,7 +1307,8 @@
             }
 
             dbState.bills.filter(b => b.vendorId === vendor.id).forEach(b => {
-                rawTxns.push({ date: b.billDate, desc: `Bill #${b.billNo} (${b.notes || ''})`, debit: Number(b.amount), credit: 0 });
+                const brandStr = (b.brands || []).join(', ');
+                rawTxns.push({ date: b.billDate, desc: `Bill #${b.billNo} [Brands: ${brandStr}] (${b.notes || ''})`, debit: Number(b.amount), credit: 0 });
             });
 
             dbState.payments.filter(p => p.vendorId === vendor.id).forEach(p => {
