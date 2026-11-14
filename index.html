@@ -37,6 +37,29 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
+
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #vendor-ledger-view, #vendor-ledger-view * {
+                visibility: visible;
+            }
+            #vendor-ledger-view {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                background: white !important;
+                color: black !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            /* Hide download button and date inputs in print view if desired, or keep them */
+            #vendor-ledger-view button {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-200 flex flex-col">
@@ -275,9 +298,10 @@
                                         <th class="p-3.5">Vendor</th>
                                         <th class="p-3.5">Bill No.</th>
                                         <th class="p-3.5">Brands</th>
-                                        <th class="p-3.5">Bill Date</th>
-                                        <th class="p-3.5">Received</th>
-                                        <th class="p-3.5">Due Date</th>
+                                        <th class="p-3.5 whitespace-nowrap">Bill Date</th>
+                                        <th class="p-3.5 whitespace-nowrap">Received</th>
+                                        <th class="p-3.5 whitespace-nowrap">Due Date</th>
+                                        <th class="p-3.5 whitespace-nowrap">Days / Due Status</th>
                                         <th class="p-3.5 text-right">Amount</th>
                                         <th class="p-3.5 text-right">Balance</th>
                                         <th class="p-3.5 text-center">Attachment</th>
@@ -1437,7 +1461,7 @@
 
             const rows = displayTxns.map(t => `
                 <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                    <td class="p-3 text-slate-500">${t.date}</td>
+                    <td class="p-3 text-slate-500 whitespace-nowrap">${formatDateDDMMYYYY(t.date)}</td>
                     <td class="p-3 text-slate-900 dark:text-white font-medium">${t.desc}</td>
                     <td class="p-3 text-right text-slate-900 dark:text-white">${t.debit ? formatCurrency(t.debit) : '-'}</td>
                     <td class="p-3 text-right text-emerald-600">${t.credit ? formatCurrency(t.credit) : '-'}</td>
@@ -1468,7 +1492,7 @@
                     <table class="w-full text-left border-collapse text-xs">
                         <thead>
                             <tr class="bg-slate-50/70 dark:bg-slate-800/40 text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
-                                <th class="p-3">Date</th>
+                                <th class="p-3 whitespace-nowrap">Date</th>
                                 <th class="p-3">Description</th>
                                 <th class="p-3 text-right">Debit (+)</th>
                                 <th class="p-3 text-right">Credit (-)</th>
@@ -1484,14 +1508,30 @@
             if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
+        function formatDateDDMMYYYY(dateStr) {
+            if (!dateStr) return '';
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            return dateStr;
+        }
+
+        function confirmDownloadLedger(format) {
+            closeModal('ledgerFormatModal');
+            if (format === 'excel') {
+                downloadLedgerExcel();
+            } else if (format === 'pdf') {
+                downloadLedgerPDF();
+            }
+        }
+
         function downloadLedgerExcel() {
             const vendor = dbState.vendors.find(v => v.id === selectedVendorIdForLedger);
-            if (!vendor) return;
-
-            let csvContent = "data:text/csv;charset=utf-8,";
-            csvContent += `Vendor Ledger - ${vendor.name}\n`;
-            csvContent += `Period: ${ledgerFromDate || 'Beginning'} to ${ledgerToDate || 'Today'}\n\n`;
-            csvContent += "Date,Description,Debit (INR),Credit (INR),Balance (INR)\n";
+            if (!vendor) {
+                showToast('Please select a vendor first');
+                return;
+            }
 
             let rawTxns = [];
             if (vendor.openingBalance !== 0) {
@@ -1514,29 +1554,137 @@
             rawTxns.sort((a, b) => new Date(a.date) - new Date(b.date));
 
             let runningBal = 0;
-            let displayTxns = rawTxns;
-            displayTxns.forEach(t => {
+            rawTxns.forEach(t => {
                 runningBal += (t.debit - t.credit);
                 t.balance = runningBal;
             });
+
+            let displayTxns = rawTxns;
             if (ledgerFromDate) displayTxns = displayTxns.filter(t => t.date >= ledgerFromDate);
             if (ledgerToDate) displayTxns = displayTxns.filter(t => t.date <= ledgerToDate);
 
+            // Construct CSV rows cleanly with proper escaping
+            let csvRows = [];
+            csvRows.push([`"Vendor Ledger - ${vendor.name}"`]);
+            csvRows.push([`"Period: ${ledgerFromDate ? formatDateDDMMYYYY(ledgerFromDate) : 'Beginning'} to ${ledgerToDate ? formatDateDDMMYYYY(ledgerToDate) : 'Today'}"`]);
+            csvRows.push([]); // empty row
+            csvRows.push(["Date", "Description", "Debit (INR)", "Credit (INR)", "Balance (INR)"]);
+
             displayTxns.forEach(t => {
-                csvContent += `"${t.date}","${t.desc.replace(/"/g, '""')}",${t.debit || 0},${t.credit || 0},${t.balance}\n`;
+                const cleanDesc = t.desc.replace(/"/g, '""');
+                csvRows.push([
+                    `"${formatDateDDMMYYYY(t.date)}"`,
+                    `"${cleanDesc}"`,
+                    t.debit || 0,
+                    t.credit || 0,
+                    t.balance
+                ]);
             });
 
-            const encodedUri = encodeURI(csvContent);
+            let csvContent = csvRows.map(e => e.join(",")).join("\n");
+            let blob = new Blob(["\uFEFF" + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `${vendor.name}_Ledger.csv`);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `${vendor.name.replace(/\s+/g, '_')}_Ledger.csv`);
             document.body.appendChild(link);
             link.click();
             document.body.removeChild(link);
+            showToast('Excel statement downloaded for ' + vendor.name);
         }
 
         function downloadLedgerPDF() {
-            window.print();
+            const vendor = dbState.vendors.find(v => v.id === selectedVendorIdForLedger);
+            if (!vendor) {
+                showToast('Please select a vendor first');
+                return;
+            }
+
+            let rawTxns = [];
+            if (vendor.openingBalance !== 0) {
+                rawTxns.push({ date: '2026-04-01', desc: 'Opening Balance', debit: vendor.openingBalance > 0 ? vendor.openingBalance : 0, credit: vendor.openingBalance < 0 ? Math.abs(vendor.openingBalance) : 0 });
+            }
+            dbState.bills.filter(b => b.vendorId === vendor.id).forEach(b => {
+                const brandStr = (b.brands || []).join(', ');
+                rawTxns.push({ date: b.billDate, desc: `Bill #${b.billNo} [Brands: ${brandStr}] (${b.notes || ''})`, debit: Number(b.amount), credit: 0 });
+            });
+            dbState.payments.filter(p => p.vendorId === vendor.id).forEach(p => {
+                const linkedBill = dbState.bills.find(b => b.id === p.billId);
+                const billRef = linkedBill ? ` (Linked Bill #${linkedBill.billNo})` : ' (On Account)';
+                rawTxns.push({ date: p.date, desc: `Payment via ${p.mode}${billRef} [Ref: ${p.reference || 'N/A'}]`, debit: 0, credit: Number(p.amount) });
+            });
+            dbState.credits.filter(c => c.vendorId === vendor.id).forEach(c => {
+                const linkedBill = dbState.bills.find(b => b.id === c.billId);
+                const billRef = linkedBill ? ` (Linked Bill #${linkedBill.billNo})` : '';
+                rawTxns.push({ date: c.date, desc: `Credit Note #${c.creditNo}${billRef} (${c.reason})`, debit: 0, credit: Number(c.amount) });
+            });
+            rawTxns.sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            let runningBal = 0;
+            rawTxns.forEach(t => {
+                runningBal += (t.debit - t.credit);
+                t.balance = runningBal;
+            });
+
+            let displayTxns = rawTxns;
+            if (ledgerFromDate) displayTxns = displayTxns.filter(t => t.date >= ledgerFromDate);
+            if (ledgerToDate) displayTxns = displayTxns.filter(t => t.date <= ledgerToDate);
+
+            const rowsHtml = displayTxns.map(t => `
+                <tr>
+                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${formatDateDDMMYYYY(t.date)}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0;">${t.desc}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right;">${t.debit ? formatCurrency(t.debit) : '-'}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; color: #16a34a;">${t.credit ? formatCurrency(t.credit) : '-'}</td>
+                    <td style="padding: 8px; border-bottom: 1px solid #e2e8f0; text-align: right; font-weight: bold; color: ${t.balance > 0 ? '#dc2626' : '#0f172a'};">${formatCurrency(t.balance)}</td>
+                </tr>
+            `).join('');
+
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${vendor.name} - Ledger Statement</title>
+                    <style>
+                        body { font-family: 'Inter', sans-serif; padding: 30px; color: #0f172a; }
+                        h2 { margin-bottom: 4px; color: #16a34a; }
+                        p { margin: 2px 0 20px 0; font-size: 13px; color: #64748b; }
+                        table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 12px; }
+                        th { background: #f8fafc; border-bottom: 2px solid #cbd5e1; padding: 10px; text-align: left; color: #475569; }
+                        th.right, td.right { text-align: right; }
+                        .footer { margin-top: 30px; font-size: 11px; text-align: center; color: #94a3b8; }
+                    </style>
+                </head>
+                <body>
+                    <h2>Lalitha Naturals - Vendor Ledger Statement</h2>
+                    <p><strong>Vendor:</strong> ${vendor.name} | <strong>Contact:</strong> ${vendor.contactPerson || '-'} | <strong>Phone:</strong> ${vendor.phone || '-'}</p>
+                    <p><strong>Period:</strong> ${ledgerFromDate ? formatDateDDMMYYYY(ledgerFromDate) : 'Beginning'} to ${ledgerToDate ? formatDateDDMMYYYY(ledgerToDate) : 'Today'}</p>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Description</th>
+                                <th class="right">Debit (+)</th>
+                                <th class="right">Credit (-)</th>
+                                <th class="right">Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rowsHtml || '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #64748b;">No transactions in selected range</td></tr>'}
+                        </tbody>
+                    </table>
+                    <div class="footer">Generated via Lalitha Naturals Payables System</div>
+                    <script>
+                        window.onload = function() {
+                            window.print();
+                        }
+                    <\/script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+            showToast('PDF statement opened for ' + vendor.name);
         }
 
         function renderBillsTable() {
@@ -1555,23 +1703,49 @@
             });
 
             if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="11" class="p-6 text-center text-slate-400">No bills found</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="12" class="p-6 text-center text-slate-400">No bills found</td></tr>`;
                 return;
             }
+
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayDate = new Date(todayStr);
 
             tbody.innerHTML = filtered.map(b => {
                 const vendor = dbState.vendors.find(v => v.id === b.vendorId);
                 const bal = getBillBalance(b);
                 const isPaid = bal <= 0;
                 const brandTags = (b.brands || ['Lalitha Naturals']).map(br => `<span class="px-1.5 py-0.5 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 text-[10px] font-medium mr-1">${br}</span>`).join('');
+                
+                let dueStatusHtml = '-';
+                if (!isPaid && b.dueDate) {
+                    const dueDateObj = new Date(b.dueDate);
+                    const diffTime = dueDateObj - todayDate;
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays === 0) {
+                        dueStatusHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500 text-white animate-pulse">Due Today</span>`;
+                    } else if (diffDays === 1) {
+                        dueStatusHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-500 text-white">Due Tomorrow (1d)</span>`;
+                    } else if (diffDays === 2) {
+                        dueStatusHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-orange-400 text-white">Due in 2 Days</span>`;
+                    } else if (diffDays < 0) {
+                        dueStatusHtml = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-700 text-white">Overdue by ${Math.abs(diffDays)}d</span>`;
+                    } else {
+                        dueStatusHtml = `<span class="text-slate-500 font-medium">In ${diffDays} days</span>`;
+                    }
+                } else if (isPaid) {
+                    dueStatusHtml = `<span class="text-slate-400 font-bold text-center block">-</span>`;
+                }
+
                 return `
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                         <td class="p-3.5 font-semibold text-slate-900 dark:text-white">${vendor?.name || 'Unknown'}</td>
                         <td class="p-3.5 text-slate-600 dark:text-slate-300">#${b.billNo}</td>
                         <td class="p-3.5">${brandTags}</td>
-                        <td class="p-3.5 text-slate-500">${b.billDate}</td>
-                        <td class="p-3.5 text-slate-500">${b.receivedDate}</td>
-                        <td class="p-3.5 font-medium text-amber-600 dark:text-amber-400">${b.dueDate}</td>
+                        <td class="p-3.5 text-slate-500 whitespace-nowrap">${formatDateDDMMYYYY(b.billDate)}</td>
+                        <td class="p-3.5 text-slate-500 whitespace-nowrap">${formatDateDDMMYYYY(b.receivedDate)}</td>
+                        <td class="p-3.5 font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap">${formatDateDDMMYYYY(b.dueDate)}</td>
+                        <td class="p-3.5 whitespace-nowrap">${dueStatusHtml}</td>
                         <td class="p-3.5 text-right text-slate-900 dark:text-white">${formatCurrency(b.amount)}</td>
                         <td class="p-3.5 text-right font-bold ${isPaid ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(bal)}</td>
                         <td class="p-3.5 text-center">
