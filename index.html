@@ -41,26 +41,14 @@
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
 
         @media print {
-            body * {
-                visibility: hidden;
-            }
-            #vendor-ledger-view, #vendor-ledger-view * {
-                visibility: visible;
-            }
+            body * { visibility: hidden; }
+            #vendor-ledger-view, #vendor-ledger-view * { visibility: visible; }
             #vendor-ledger-view {
-                position: absolute;
-                left: 0;
-                top: 0;
-                width: 100%;
-                background: white !important;
-                color: black !important;
-                box-shadow: none !important;
-                border: none !important;
+                position: absolute; left: 0; top: 0; width: 100%;
+                background: white !important; color: black !important;
+                box-shadow: none !important; border: none !important;
             }
-            /* Hide download button and date inputs in print view if desired, or keep them */
-            #vendor-ledger-view button {
-                display: none !important;
-            }
+            #vendor-ledger-view button, #vendor-ledger-view input { display: none !important; }
         }
     </style>
 </head>
@@ -281,16 +269,38 @@
 
                     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
                         <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <div class="relative w-full sm:w-72">
-                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                                <input type="text" id="bill-search" oninput="renderBillsTable()" placeholder="Search bills or brands..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
-                            </div>
+                            <!-- Unified Filter Field: Dropdown for Type + Text Search Input -->
                             <div class="flex items-center space-x-2 w-full sm:w-auto">
-                                <select id="bill-filter-status" onchange="renderBillsTable()" class="w-full sm:w-auto px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
-                                    <option value="all">All Bills</option>
-                                    <option value="unpaid">Unpaid / Due</option>
-                                    <option value="paid">Paid</option>
+                                <select id="bill-filter-type" onchange="toggleBillSearchInput()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                    <option value="vendor">Vendor Name</option>
+                                    <option value="brand">Brand Name</option>
+                                    <option value="invoice">Invoice Number</option>
                                 </select>
+                                <div class="relative w-full sm:w-64">
+                                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                    <input type="text" id="bill-search-query" oninput="renderBillsTable()" placeholder="Enter search value..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                                </div>
+                            </div>
+
+                            <!-- Sort / Status Filter with Custom Date Range Option -->
+                            <div class="flex items-center space-x-2 w-full sm:w-auto flex-wrap gap-y-2">
+                                <select id="bill-filter-sort" onchange="toggleBillCustomDateRange()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                    <option value="all">All Bills</option>
+                                    <option value="paid">Paid</option>
+                                    <option value="unpaid">Unpaid</option>
+                                    <option value="2days">Due in 2 Days</option>
+                                    <option value="today">Due Today</option>
+                                    <option value="tomorrow">Due Tomorrow</option>
+                                    <option value="custom">Custom Date Range</option>
+                                </select>
+
+                                <!-- Custom Date Range Inputs (Hidden by default) -->
+                                <div id="bill-custom-date-container" class="hidden items-center space-x-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl text-[11px]">
+                                    <span class="text-slate-400">From:</span>
+                                    <input type="date" id="bill-from-date" onchange="renderBillsTable()" class="bg-transparent border-none text-slate-900 dark:text-white text-[11px] focus:outline-none">
+                                    <span class="text-slate-400">To:</span>
+                                    <input type="date" id="bill-to-date" onchange="renderBillsTable()" class="bg-transparent border-none text-slate-900 dark:text-white text-[11px] focus:outline-none">
+                                </div>
                             </div>
                         </div>
                         <div class="overflow-x-auto">
@@ -534,18 +544,18 @@
 
     <!-- Admin PIN Verification Modal -->
     <div id="adminPinModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
-        <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-sm w-full p-6 space-y-4">
+        <div class="bg-[#f5f5dc] dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-2xl max-w-sm w-full p-6 space-y-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Admin PIN Verification</h3>
-                <button onclick="closeModal('adminPinModal'); document.getElementById('userRoleSelect').value='user';" class="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <button onclick="closeModal('adminPinModal'); document.getElementById('userRoleSelect').value='user';" class="p-1 rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
-            <p class="text-xs text-slate-500">Enter Admin PIN to switch to Admin mode.</p>
+            <p class="text-xs text-slate-700 dark:text-slate-300">Enter Admin PIN to switch to Admin mode.</p>
             <div>
-                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Enter 4-Digit PIN (1995) *</label>
-                <input type="password" inputmode="numeric" pattern="[0-9]*" id="adminPinInput" maxlength="4" class="w-full text-center tracking-widest text-base font-bold px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white" placeholder="****">
+                <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Enter 4-Digit PIN *</label>
+                <input type="password" inputmode="numeric" pattern="[0-9]*" id="adminPinInput" maxlength="4" class="w-full text-center tracking-widest text-base font-bold px-3 py-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white" placeholder="****">
             </div>
             <div class="flex justify-end space-x-2 pt-2">
-                <button type="button" onclick="closeModal('adminPinModal'); document.getElementById('userRoleSelect').value='user';" class="px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-medium hover:bg-slate-100 cursor-pointer">Cancel</button>
+                <button type="button" onclick="closeModal('adminPinModal'); document.getElementById('userRoleSelect').value='user';" class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 cursor-pointer">Cancel</button>
                 <button type="button" onclick="verifyAdminPin()" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs cursor-pointer">Verify PIN</button>
             </div>
         </div>
@@ -690,7 +700,7 @@
 
     <!-- JavaScript Application Logic -->
     <script>
-        const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V3';
+        const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V4';
 
         let dbState = {
             vendors: [
@@ -834,7 +844,7 @@
             if (typeof lucide !== 'undefined') {
                 lucide.createIcons();
             }
-        };
+        }
 
         function promptRoleSwitch(role) {
             if (role === 'admin') {
@@ -1271,8 +1281,8 @@
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                         <td class="p-3.5 font-semibold text-slate-900 dark:text-white">${vendor?.name || 'Unknown'}</td>
                         <td class="p-3.5 text-slate-600 dark:text-slate-300">#${b.billNo}</td>
-                        <td class="p-3.5 text-slate-500">${b.billDate}</td>
-                        <td class="p-3.5 font-medium text-amber-600 dark:text-amber-400">${b.dueDate}</td>
+                        <td class="p-3.5 text-slate-500">${formatDateDDMMYYYY(b.billDate)}</td>
+                        <td class="p-3.5 font-medium text-amber-600 dark:text-amber-400">${formatDateDDMMYYYY(b.dueDate)}</td>
                         <td class="p-3.5 text-right text-slate-900 dark:text-white">${formatCurrency(b.amount)}</td>
                         <td class="p-3.5 text-right font-bold text-rose-600">${formatCurrency(bal)}</td>
                         <td class="p-3.5 text-center">
@@ -1569,11 +1579,10 @@
             if (ledgerFromDate) displayTxns = displayTxns.filter(t => t.date >= ledgerFromDate);
             if (ledgerToDate) displayTxns = displayTxns.filter(t => t.date <= ledgerToDate);
 
-            // Construct CSV rows cleanly with proper escaping
             let csvRows = [];
             csvRows.push([`"Vendor Ledger - ${vendor.name}"`]);
             csvRows.push([`"Period: ${ledgerFromDate ? formatDateDDMMYYYY(ledgerFromDate) : 'Beginning'} to ${ledgerToDate ? formatDateDDMMYYYY(ledgerToDate) : 'Today'}"`]);
-            csvRows.push([]); // empty row
+            csvRows.push([]);
             csvRows.push(["Date", "Description", "Debit (INR)", "Credit (INR)", "Balance (INR)"]);
 
             displayTxns.forEach(t => {
@@ -1652,7 +1661,6 @@
                 });
 
                 const ws = XLSX.utils.aoa_to_sheet(sheetData);
-                // Clean sheet name (Excel sheet names max 31 chars and no special chars like : \ / ? * [ ])
                 let safeSheetName = vendor.name.replace(/[:\\/?*\[\]]/g, '').substring(0, 31);
                 XLSX.utils.book_append_sheet(wb, ws, safeSheetName);
             });
@@ -1755,19 +1763,91 @@
             showToast('PDF statement opened for ' + vendor.name);
         }
 
+        function toggleBillSearchInput() {
+            const type = document.getElementById('bill-filter-type')?.value;
+            const input = document.getElementById('bill-search-query');
+            if (!input) return;
+            if (type === 'vendor') input.placeholder = 'Search vendor name...';
+            else if (type === 'brand') input.placeholder = 'Search brand name...';
+            else if (type === 'invoice') input.placeholder = 'Search invoice number...';
+            renderBillsTable();
+        }
+
+        function toggleBillCustomDateRange() {
+            const sortVal = document.getElementById('bill-filter-sort')?.value;
+            const container = document.getElementById('bill-custom-date-container');
+            if (!container) return;
+            if (sortVal === 'custom') {
+                container.classList.remove('hidden');
+                container.classList.add('flex');
+                const fromDateEl = document.getElementById('bill-from-date');
+                const toDateEl = document.getElementById('bill-to-date');
+                if (fromDateEl && !fromDateEl.value) {
+                    fromDateEl.value = new Date().toISOString().split('T')[0];
+                }
+                if (toDateEl && !toDateEl.value) {
+                    toDateEl.value = new Date().toISOString().split('T')[0];
+                }
+            } else {
+                container.classList.add('hidden');
+                container.classList.remove('flex');
+            }
+            renderBillsTable();
+        }
+
         function renderBillsTable() {
-            const search = document.getElementById('bill-search').value.toLowerCase();
-            const statusFilter = document.getElementById('bill-filter-status').value;
+            const searchEl = document.getElementById('bill-search-query');
+            const typeEl = document.getElementById('bill-filter-type');
+            const sortEl = document.getElementById('bill-filter-sort');
             const tbody = document.getElementById('bills-table-tbody');
+            if (!tbody) return;
+
+            const search = searchEl ? searchEl.value.toLowerCase() : '';
+            const filterType = typeEl ? typeEl.value : 'vendor';
+            const sortVal = sortEl ? sortEl.value : 'all';
 
             let filtered = dbState.bills.filter(b => {
                 const vendor = dbState.vendors.find(v => v.id === b.vendorId);
                 const brandStr = (b.brands || []).join(', ').toLowerCase();
-                const matchesSearch = b.billNo.toLowerCase().includes(search) || (vendor && vendor.name.toLowerCase().includes(search)) || brandStr.includes(search);
+                const vName = vendor ? vendor.name.toLowerCase() : '';
+                const invNo = b.billNo.toLowerCase();
+
+                let matchesSearch = true;
+                if (search) {
+                    if (filterType === 'vendor') {
+                        matchesSearch = vName.includes(search);
+                    } else if (filterType === 'brand') {
+                        matchesSearch = brandStr.includes(search);
+                    } else if (filterType === 'invoice') {
+                        matchesSearch = invNo.includes(search);
+                    }
+                }
+
+                if (!matchesSearch) return false;
+
                 const bal = getBillBalance(b);
-                if (statusFilter === 'unpaid' && bal <= 0) return false;
-                if (statusFilter === 'paid' && bal > 0) return false;
-                return matchesSearch;
+                if (sortVal === 'paid' && bal > 0) return false;
+                if (sortVal === 'unpaid' && bal <= 0) return false;
+
+                const todayStr = new Date().toISOString().split('T')[0];
+                const todayDate = new Date(todayStr);
+
+                if (sortVal === '2days' && b.dueDate) {
+                    const dueDateObj = new Date(b.dueDate);
+                    const diffDays = Math.ceil((dueDateObj - todayDate) / (1000 * 60 * 60 * 24));
+                    if (diffDays !== 2) return false;
+                }
+                if (sortVal === 'today' && b.dueDate !== todayStr) return false;
+                if (sortVal === 'tomorrow' && b.dueDate !== getTomorrowStr()) return false;
+
+                if (sortVal === 'custom') {
+                    const fromDate = document.getElementById('bill-from-date')?.value;
+                    const toDate = document.getElementById('bill-to-date')?.value;
+                    if (fromDate && b.dueDate < fromDate) return false;
+                    if (toDate && b.dueDate > toDate) return false;
+                }
+
+                return true;
             });
 
             if (filtered.length === 0) {
@@ -1822,14 +1902,17 @@
                         <td class="p-3.5 text-center">
                             <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold ${isPaid ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-950/40 dark:text-rose-300'}">${isPaid ? 'Paid' : 'Unpaid'}</span>
                         </td>
-                        <td class="p-3.5 text-center space-x-1">
-                            <button onclick="triggerEditBill('${b.id}')" class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-brand-50 hover:text-brand-600 transition cursor-pointer" title="Edit Bill">Edit</button>
-                            ${currentUserRole === 'admin' ? `<button onclick="deleteBill('${b.id}')" class="p-1 rounded text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Delete Bill"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
+                        <td class="p-3.5 text-center whitespace-nowrap">
+                            <div class="inline-flex items-center space-x-1">
+                                ${!isPaid ? `<button onclick="openModal('paymentModal'); document.getElementById('pVendorId').value='${b.vendorId}'; updateVendorBillsDropdown(); document.getElementById('pBillId').value='${b.id}'; document.getElementById('pAmount').value='${bal}';" class="px-2 py-1 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 font-semibold hover:bg-brand-100 transition cursor-pointer" title="Pay Bill">Pay</button>` : `<span class="inline-block w-[34px]"></span>`}
+                                <button onclick="triggerEditBill('${b.id}')" class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-brand-50 hover:text-brand-600 transition cursor-pointer" title="Edit Bill">Edit</button>
+                                ${currentUserRole === 'admin' ? `<button onclick="deleteBill('${b.id}')" class="p-1 rounded text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Delete Bill"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
+                            </div>
                         </td>
                     </tr>
                 `;
             }).join('');
-            lucide.createIcons();
+            if (typeof lucide !== 'undefined') lucide.createIcons();
         }
 
         function renderPaymentsTable() {
@@ -1844,7 +1927,7 @@
                 const bill = dbState.bills.find(b => b.id === p.billId);
                 return `
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                        <td class="p-3.5 text-slate-500">${p.date}</td>
+                        <td class="p-3.5 text-slate-500">${formatDateDDMMYYYY(p.date)}</td>
                         <td class="p-3.5 font-semibold text-slate-900 dark:text-white">${vendor?.name || 'Unknown'}</td>
                         <td class="p-3.5"><span class="px-2 py-0.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-[11px] font-medium">${p.mode}</span></td>
                         <td class="p-3.5 text-slate-500">${p.reference || '-'}</td>
@@ -1871,7 +1954,7 @@
                 const bill = dbState.bills.find(b => b.id === c.billId);
                 return `
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
-                        <td class="p-3.5 text-slate-500">${c.date}</td>
+                        <td class="p-3.5 text-slate-500">${formatDateDDMMYYYY(c.date)}</td>
                         <td class="p-3.5 font-semibold text-slate-900 dark:text-white">${vendor?.name || 'Unknown'}</td>
                         <td class="p-3.5 text-slate-600 dark:text-slate-300">#${c.creditNo}</td>
                         <td class="p-3.5 text-slate-600 dark:text-slate-300">${bill ? '#' + bill.billNo : 'General Adjustment'}</td>
