@@ -39,7 +39,6 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
         .dark ::-webkit-scrollbar-thumb { background: #475569; }
-
         @media print {
             body * { visibility: hidden; }
             #vendor-ledger-view, #vendor-ledger-view * { visibility: visible; }
@@ -57,7 +56,7 @@
     <!-- App Container -->
     <div id="app" class="flex flex-col h-full overflow-hidden">
         
-        <!-- Minimalist Header -->
+        <!-- Header -->
         <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3.5 flex items-center justify-between shrink-0 z-20 shadow-xs">
             <div class="flex items-center space-x-3">
                 <div class="h-9 w-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold shadow-md shadow-brand-600/20 text-base">
@@ -94,7 +93,7 @@
         <!-- Main Body Layout -->
         <div class="flex flex-1 overflow-hidden">
             
-            <!-- Clean Sidebar Navigation (Order: Dashboard, Vendors & Ledgers, Bill Entry, Credit Note, Payments) -->
+            <!-- Sidebar Navigation -->
             <aside class="w-18 md:w-56 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between shrink-0 z-10">
                 <nav class="p-3 space-y-1 overflow-y-auto">
                     <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 cursor-pointer">
@@ -227,7 +226,6 @@
                         </button>
                     </div>
 
-                    <!-- Vendor Filters & Brand Filter Bar -->
                     <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
                         <div class="relative w-full sm:w-80">
                             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
@@ -274,42 +272,77 @@
                         <button onclick="setBillTab('unpaid')" id="bill-tab-unpaid" class="pb-3 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition cursor-pointer">Unpaid</button>
                     </div>
 
-                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
-                        <div class="p-4 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
-                            <!-- Advanced Filter Options -->
-                            <div class="flex items-center space-x-2 w-full sm:w-auto flex-wrap gap-y-2">
-                                <select id="bill-filter-type" onchange="toggleBillFilterFields()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
-                                    <option value="all">All Filters</option>
-                                    <option value="duedays">Due Days (Today, Tomorrow, 2 Days, This Week, Custom)</option>
-                                    <option value="vendor">Vendor Name</option>
-                                    <option value="brand">Brand Name</option>
-                                    <option value="invoice">Invoice Number</option>
-                                </select>
+                    <!-- Toolbar: Filter Button & Sort By Button -->
+                    <div class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
+                        <div class="flex items-center space-x-3">
+                            <button onclick="toggleFilterSection()" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 hover:bg-brand-100 text-xs font-bold transition cursor-pointer shadow-xs">
+                                <i data-lucide="filter" class="w-4 h-4"></i>
+                                <span>Filter</span>
+                            </button>
+                            <button onclick="clearAllFilters()" class="text-xs font-semibold text-slate-500 hover:text-rose-600 transition cursor-pointer">Clear Filters</button>
+                        </div>
 
-                                <!-- Sub-filter dropdown for Due Days -->
-                                <select id="bill-filter-duedays" onchange="toggleBillCustomDateRange()" class="hidden px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                        <!-- Sort By Button -->
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-slate-400 font-medium">Sort By:</span>
+                            <select id="bill-sort-select" onchange="renderBillsTable()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                <option value="default">Default Order</option>
+                                <option value="price-low-high">Price: Low to High</option>
+                                <option value="price-high-low">Price: High to Low</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Filter Section Panel (Hidden by default) -->
+                    <div id="filterSectionPanel" class="hidden bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                            <!-- Due Date Filter -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Due Date</label>
+                                <select id="filter-duedate-select" onchange="toggleCustomDateInput(); renderBillsTable();" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                    <option value="all">All Due Dates</option>
                                     <option value="today">Today</option>
                                     <option value="tomorrow">Tomorrow</option>
-                                    <option value="2days">Due in 2 Days</option>
-                                    <option value="week">This Week</option>
-                                    <option value="custom">Custom Date Range</option>
+                                    <option value="2days">In 2 days</option>
+                                    <option value="custom">Custom date range</option>
                                 </select>
+                            </div>
 
-                                <!-- Text search input for Vendor, Brand, Invoice -->
-                                <div id="bill-search-wrapper" class="relative w-full sm:w-64 hidden">
-                                    <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                                    <input type="text" id="bill-search-query" oninput="renderBillsTable()" placeholder="Enter search value..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
-                                </div>
+                            <!-- Vendor Name Filter (Alphabetically Sorted) -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Vendor Name</label>
+                                <select id="filter-vendor-select" onchange="renderBillsTable()" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                    <option value="all">All Vendors</option>
+                                </select>
+                            </div>
 
-                                <!-- Custom Date Range Inputs -->
-                                <div id="bill-custom-date-container" class="hidden items-center space-x-1.5 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-xl text-[11px]">
-                                    <span class="text-slate-400">From:</span>
-                                    <input type="date" id="bill-from-date" onchange="renderBillsTable()" class="bg-transparent border-none text-slate-900 dark:text-white text-[11px] focus:outline-none">
-                                    <span class="text-slate-400">To:</span>
-                                    <input type="date" id="bill-to-date" onchange="renderBillsTable()" class="bg-transparent border-none text-slate-900 dark:text-white text-[11px] focus:outline-none">
-                                </div>
+                            <!-- Brand Name Filter (Alphabetically Sorted) -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Brand Name</label>
+                                <select id="filter-brand-select" onchange="renderBillsTable()" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                    <option value="all">All Brands</option>
+                                </select>
+                            </div>
+
+                            <!-- Invoice Number Filter (Alphabetically Sorted) -->
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Invoice Number</label>
+                                <select id="filter-invoice-select" onchange="renderBillsTable()" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                    <option value="all">All Invoices</option>
+                                </select>
                             </div>
                         </div>
+
+                        <!-- Custom Date Range Box -->
+                        <div id="filter-custom-date-box" class="hidden items-center space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                            <span class="text-slate-400 font-medium">From:</span>
+                            <input type="date" id="bill-from-date" onchange="renderBillsTable()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none text-slate-900 dark:text-white focus:outline-none">
+                            <span class="text-slate-400 font-medium">To:</span>
+                            <input type="date" id="bill-to-date" onchange="renderBillsTable()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none text-slate-900 dark:text-white focus:outline-none">
+                        </div>
+                    </div>
+
+                    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse">
                                 <thead>
@@ -399,7 +432,6 @@
                         </div>
                     </div>
                 </section>
-
             </main>
         </div>
     </div>
@@ -507,7 +539,6 @@
                     </div>
                     <div id="bBrandContainer" class="grid grid-cols-2 sm:grid-cols-3 gap-2 p-3 bg-slate-100 dark:bg-slate-800 rounded-xl max-h-32 overflow-y-auto"></div>
                 </div>
-                <!-- Reordered: Bill Date, Received Date, Due Date -->
                 <div class="grid grid-cols-3 gap-2.5">
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bill Date *</label>
@@ -549,7 +580,7 @@
         </div>
     </div>
 
-    <!-- Admin PIN Verification Modal -->
+    <!-- Admin PIN Verification Modal (Ivory background `#f5f5dc`) -->
     <div id="adminPinModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-[#f5f5dc] dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-2xl max-w-sm w-full p-6 space-y-4">
             <div class="flex items-center justify-between">
@@ -707,8 +738,7 @@
 
     <!-- JavaScript Application Logic -->
     <script>
-        const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V4';
-
+        const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V6';
         let dbState = {
             vendors: [
                 { id: 'v_1', name: 'Organic Agro Farms', contactPerson: 'Suresh Rao', phone: '9848012345', gstin: '37AABCO1234K1ZV', openingBalance: 5000, address: 'Rythu Bazaar Road, Vizag' },
@@ -749,6 +779,7 @@
             }
             populateVendorDropdowns();
             populateBrandDropdowns();
+            populateBillFilterDropdowns();
             switchTab('dashboard');
             lucide.createIcons();
         };
@@ -768,6 +799,7 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(dbState));
             populateVendorDropdowns();
             populateBrandDropdowns();
+            populateBillFilterDropdowns();
         }
 
         function showToast(msg) {
@@ -845,7 +877,7 @@
 
             if (tabId === 'dashboard') renderDashboard();
             if (tabId === 'vendors') renderVendorList();
-            if (tabId === 'bills') renderBillsTable();
+            if (tabId === 'bills') { populateBillFilterDropdowns(); renderBillsTable(); }
             if (tabId === 'payments') renderPaymentsTable();
             if (tabId === 'credits') renderCreditsTable();
             
@@ -911,7 +943,8 @@
         }
 
         function populateVendorDropdowns() {
-            const opts = dbState.vendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+            const sortedVendors = [...dbState.vendors].sort((a, b) => a.name.localeCompare(b.name));
+            const opts = sortedVendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
             ['bVendorId', 'pVendorId', 'cVmId'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<option value="">Select Vendor...</option>` + opts;
@@ -922,15 +955,46 @@
             const brandSelect = document.getElementById('vendor-filter-brand');
             if (brandSelect) {
                 const currentVal = brandSelect.value;
-                brandSelect.innerHTML = `<option value="all">All Brands</option>` + dbState.brands.map(b => `<option value="${b}">${b}</option>`).join('');
+                const sortedBrands = [...dbState.brands].sort((a, b) => a.localeCompare(b));
+                brandSelect.innerHTML = `<option value="all">All Brands</option>` + sortedBrands.map(b => `<option value="${b}">${b}</option>`).join('');
                 brandSelect.value = currentVal || 'all';
+            }
+        }
+
+        function populateBillFilterDropdowns() {
+            // Vendor Name Filter (Alphabetically Sorted)
+            const sortedVendors = [...dbState.vendors].sort((a, b) => a.name.localeCompare(b.name));
+            const vSelect = document.getElementById('filter-vendor-select');
+            if (vSelect) {
+                const cur = vSelect.value;
+                vSelect.innerHTML = `<option value="all">All Vendors</option>` + sortedVendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+                vSelect.value = cur;
+            }
+
+            // Brand Name Filter (Alphabetically Sorted)
+            const sortedBrands = [...dbState.brands].sort((a, b) => a.localeCompare(b));
+            const bSelect = document.getElementById('filter-brand-select');
+            if (bSelect) {
+                const cur = bSelect.value;
+                bSelect.innerHTML = `<option value="all">All Brands</option>` + sortedBrands.map(b => `<option value="${b}">${b}</option>`).join('');
+                bSelect.value = cur;
+            }
+
+            // Invoice Number Filter (Alphabetically Sorted)
+            const uniqueInvoices = [...new Set(dbState.bills.map(b => b.billNo))].sort((a, b) => a.localeCompare(b));
+            const iSelect = document.getElementById('filter-invoice-select');
+            if (iSelect) {
+                const cur = iSelect.value;
+                iSelect.innerHTML = `<option value="all">All Invoices</option>` + uniqueInvoices.map(inv => `<option value="${inv}">#${inv}</option>`).join('');
+                iSelect.value = cur;
             }
         }
 
         function renderBillBrandCheckboxes(selectedBrands = []) {
             const container = document.getElementById('bBrandContainer');
             if (!container) return;
-            container.innerHTML = dbState.brands.map((b, idx) => {
+            const sortedBrands = [...dbState.brands].sort((a, b) => a.localeCompare(b));
+            container.innerHTML = sortedBrands.map((b, idx) => {
                 const isChecked = selectedBrands.length > 0 ? selectedBrands.includes(b) : (idx === 0);
                 return `
                     <label class="flex items-center space-x-2 text-xs cursor-pointer">
@@ -949,6 +1013,7 @@
                     dbState.brands.push(trimmed);
                     saveData();
                     renderBillBrandCheckboxes();
+                    populateBillFilterDropdowns();
                     showToast(`Brand "${trimmed}" added successfully`);
                 } else {
                     showToast('Brand already exists');
@@ -1333,7 +1398,6 @@
                 let dayDue = dayBills.reduce((sum, b) => sum + getBillBalance(b), 0);
 
                 const isToday = dateStr === new Date().toISOString().split('T')[0];
-
                 html += `
                     <div class="p-1.5 rounded-xl border ${isToday ? 'border-brand-500 bg-brand-50/50 dark:bg-brand-950/30' : 'border-slate-200 dark:border-slate-800'} h-16 flex flex-col justify-between transition relative group cursor-pointer hover:border-brand-400">
                         <div onclick="selectDashboardDate('${dateStr}')" class="flex justify-between items-center">
@@ -1345,24 +1409,14 @@
                                 const v = dbState.vendors.find(ven => ven.id === b.vendorId);
                                 const bal = getBillBalance(b);
                                 return `
-                                    <div onclick="event.stopPropagation(); openModal('paymentModal'); document.getElementById('pVendorId').value='${b.vendorId}'; updateVendorBillsDropdown(); document.getElementById('pBillId').value='${b.id}'; document.getElementById('pAmount').value='${bal}';" 
-                                         class="text-[9px] bg-white dark:bg-slate-800 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 truncate hover:bg-brand-50 dark:hover:bg-brand-950/50 hover:border-brand-400 transition cursor-pointer"
+                                    <div onclick="event.stopPropagation(); openModal('paymentModal'); document.getElementById('pVendorId').value='${b.vendorId}'; updateVendorBillsDropdown(); document.getElementById('pBillId').value='${b.id}'; document.getElementById('pAmount').value='${bal}';"
+                                          class="text-[9px] bg-white dark:bg-slate-800 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 truncate hover:bg-brand-50 dark:hover:bg-brand-950/50 hover:border-brand-400 transition cursor-pointer"
                                          title="Click to Pay Bill #${b.billNo} - ${v?.name || ''}">
                                         <span class="font-semibold">${v?.name || ''}:</span> ${formatCurrency(bal)}
                                     </div>
                                 `;
                             }).join('')}
                         </div>
-                        
-                        ${dayBills.length > 0 ? `
-                            <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 hidden group-hover:block z-40 w-52 bg-slate-900 text-white text-[10px] rounded-xl p-2.5 shadow-xl pointer-events-none space-y-1">
-                                <p class="font-bold border-b border-slate-700 pb-1 text-brand-400">Dues on ${dateStr}</p>
-                                ${dayBills.map(b => {
-                                    const v = dbState.vendors.find(ven => ven.id === b.vendorId);
-                                    return `<div><span class="font-semibold">${v?.name || ''}</span> (#${b.billNo}): <span class="text-rose-400">${formatCurrency(getBillBalance(b))}</span></div>`;
-                                }).join('')}
-                            </div>
-                        ` : ''}
                     </div>
                 `;
             }
@@ -1374,7 +1428,8 @@
             const brandFilter = document.getElementById('vendor-filter-brand').value;
             const container = document.getElementById('vendor-list-container');
 
-            let filtered = dbState.vendors.filter(v => {
+            let sortedVendors = [...dbState.vendors].sort((a, b) => a.name.localeCompare(b.name));
+            let filtered = sortedVendors.filter(v => {
                 const matchesSearch = v.name.toLowerCase().includes(search);
                 if (!matchesSearch) return false;
 
@@ -1399,7 +1454,7 @@
                 const out = getVendorOutstanding(v.id);
                 const isSelected = v.id === selectedVendorIdForLedger;
                 const vendorBills = dbState.bills.filter(b => b.vendorId === v.id);
-                const vendorBrands = [...new Set(vendorBills.flatMap(b => b.brands || []))];
+                const vendorBrands = [...new Set(vendorBills.flatMap(b => b.brands || []))].sort((a, b) => a.localeCompare(b));
 
                 return `
                     <div onclick="selectVendorForLedger('${v.id}')" class="p-3.5 cursor-pointer transition ${isSelected ? 'bg-brand-50/60 dark:bg-brand-950/40 border-l-4 border-brand-600' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}">
@@ -1785,77 +1840,69 @@
             renderBillsTable();
         }
 
-        function toggleBillFilterFields() {
-            const type = document.getElementById('bill-filter-type')?.value;
-            const dueDaysSelect = document.getElementById('bill-filter-duedays');
-            const searchWrapper = document.getElementById('bill-search-wrapper');
-            const searchInput = document.getElementById('bill-search-query');
-            const customDateContainer = document.getElementById('bill-custom-date-container');
-
-            if (!dueDaysSelect || !searchWrapper || !searchInput || !customDateContainer) return;
-
-            // Reset visibility
-            dueDaysSelect.classList.add('hidden');
-            searchWrapper.classList.add('hidden');
-            customDateContainer.classList.add('hidden');
-            customDateContainer.classList.remove('flex');
-
-            if (type === 'duedays') {
-                dueDaysSelect.classList.remove('hidden');
-                toggleBillCustomDateRange();
-            } else if (type === 'vendor') {
-                searchWrapper.classList.remove('hidden');
-                searchInput.placeholder = 'Search vendor name...';
-            } else if (type === 'brand') {
-                searchWrapper.classList.remove('hidden');
-                searchInput.placeholder = 'Search brand name...';
-            } else if (type === 'invoice') {
-                searchWrapper.classList.remove('hidden');
-                searchInput.placeholder = 'Search invoice number...';
+        function toggleFilterSection() {
+            const panel = document.getElementById('filterSectionPanel');
+            if (panel) {
+                panel.classList.toggle('hidden');
             }
-
-            renderBillsTable();
         }
 
-        function toggleBillCustomDateRange() {
-            const type = document.getElementById('bill-filter-type')?.value;
-            const dueDaysVal = document.getElementById('bill-filter-duedays')?.value;
-            const container = document.getElementById('bill-custom-date-container');
-            if (!container) return;
+        function toggleCustomDateInput() {
+            const dueDateSelect = document.getElementById('filter-duedate-select');
+            const dateBox = document.getElementById('filter-custom-date-box');
+            if (!dueDateSelect || !dateBox) return;
 
-            if (type === 'duedays' && dueDaysVal === 'custom') {
-                container.classList.remove('hidden');
-                container.classList.add('flex');
+            if (dueDateSelect.value === 'custom') {
+                dateBox.classList.remove('hidden');
+                dateBox.classList.add('flex');
                 const fromDateEl = document.getElementById('bill-from-date');
                 const toDateEl = document.getElementById('bill-to-date');
                 if (fromDateEl && !fromDateEl.value) fromDateEl.value = new Date().toISOString().split('T')[0];
                 if (toDateEl && !toDateEl.value) toDateEl.value = new Date().toISOString().split('T')[0];
             } else {
-                container.classList.add('hidden');
-                container.classList.remove('flex');
+                dateBox.classList.add('hidden');
+                dateBox.classList.remove('flex');
             }
+        }
+
+        function clearAllFilters() {
+            const dueDateSelect = document.getElementById('filter-duedate-select');
+            if (dueDateSelect) dueDateSelect.value = 'all';
+
+            const vendorSelect = document.getElementById('filter-vendor-select');
+            if (vendorSelect) vendorSelect.value = 'all';
+
+            const brandSelect = document.getElementById('filter-brand-select');
+            if (brandSelect) brandSelect.value = 'all';
+
+            const invoiceSelect = document.getElementById('filter-invoice-select');
+            if (invoiceSelect) invoiceSelect.value = 'all';
+
+            const sortSelect = document.getElementById('bill-sort-select');
+            if (sortSelect) sortSelect.value = 'default';
+
+            toggleCustomDateInput();
             renderBillsTable();
+            showToast('All filters cleared');
         }
 
         function renderBillsTable() {
-            const searchEl = document.getElementById('bill-search-query');
-            const typeEl = document.getElementById('bill-filter-type');
-            const dueDaysEl = document.getElementById('bill-filter-duedays');
+            const dueDateSelect = document.getElementById('filter-duedate-select');
+            const vendorSelect = document.getElementById('filter-vendor-select');
+            const brandSelect = document.getElementById('filter-brand-select');
+            const invoiceSelect = document.getElementById('filter-invoice-select');
+            const sortSelect = document.getElementById('bill-sort-select');
             const tbody = document.getElementById('bills-table-tbody');
             if (!tbody) return;
 
-            const search = searchEl ? searchEl.value.toLowerCase() : '';
-            const filterType = typeEl ? typeEl.value : 'all';
-            const dueDaysVal = dueDaysEl ? dueDaysEl.value : 'today';
+            const dueDateVal = dueDateSelect ? dueDateSelect.value : 'all';
+            const vendorVal = vendorSelect ? vendorSelect.value : 'all';
+            const brandVal = brandSelect ? brandSelect.value : 'all';
+            const invoiceVal = invoiceSelect ? invoiceSelect.value : 'all';
+            const sortVal = sortSelect ? sortSelect.value : 'default';
 
             const todayStr = new Date().toISOString().split('T')[0];
             const todayDate = new Date(todayStr);
-
-            const now = new Date();
-            const startOfWeek = new Date(now);
-            startOfWeek.setDate(now.getDate() - now.getDay());
-            const endOfWeek = new Date(startOfWeek);
-            endOfWeek.setDate(startOfWeek.getDate() + 6);
 
             let filtered = dbState.bills.filter(b => {
                 const bal = getBillBalance(b);
@@ -1865,38 +1912,39 @@
                 if (currentBillTab === 'paid' && !isPaid) return false;
                 if (currentBillTab === 'unpaid' && isPaid) return false;
 
-                // 2. Advanced Filter
-                if (filterType === 'vendor') {
-                    const vendor = dbState.vendors.find(v => v.id === b.vendorId);
-                    const vName = vendor ? vendor.name.toLowerCase() : '';
-                    if (search && !vName.includes(search)) return false;
-                } else if (filterType === 'brand') {
-                    const brandStr = (b.brands || []).join(', ').toLowerCase();
-                    if (search && !brandStr.includes(search)) return false;
-                } else if (filterType === 'invoice') {
-                    const invNo = b.billNo.toLowerCase();
-                    if (search && !invNo.includes(search)) return false;
-                } else if (filterType === 'duedays' && b.dueDate) {
+                // 2. Due Date Filter
+                if (dueDateVal === 'today' && b.dueDate !== todayStr) return false;
+                if (dueDateVal === 'tomorrow' && b.dueDate !== getTomorrowStr()) return false;
+                if (dueDateVal === '2days' && b.dueDate) {
                     const dueDateObj = new Date(b.dueDate);
-                    if (dueDaysVal === 'today' && b.dueDate !== todayStr) return false;
-                    if (dueDaysVal === 'tomorrow' && b.dueDate !== getTomorrowStr()) return false;
-                    if (dueDaysVal === '2days') {
-                        const diffDays = Math.ceil((dueDateObj - todayDate) / (1000 * 60 * 60 * 24));
-                        if (diffDays !== 2) return false;
-                    }
-                    if (dueDaysVal === 'week') {
-                        if (dueDateObj < startOfWeek || dueDateObj > endOfWeek) return false;
-                    }
-                    if (dueDaysVal === 'custom') {
-                        const fromDate = document.getElementById('bill-from-date')?.value;
-                        const toDate = document.getElementById('bill-to-date')?.value;
-                        if (fromDate && b.dueDate < fromDate) return false;
-                        if (toDate && b.dueDate > toDate) return false;
-                    }
+                    const diffDays = Math.ceil((dueDateObj - todayDate) / (1000 * 60 * 60 * 24));
+                    if (diffDays !== 2) return false;
                 }
+                if (dueDateVal === 'custom') {
+                    const fromDate = document.getElementById('bill-from-date')?.value;
+                    const toDate = document.getElementById('bill-to-date')?.value;
+                    if (fromDate && b.dueDate < fromDate) return false;
+                    if (toDate && b.dueDate > toDate) return false;
+                }
+
+                // 3. Vendor Name Filter
+                if (vendorVal !== 'all' && b.vendorId !== vendorVal) return false;
+
+                // 4. Brand Name Filter
+                if (brandVal !== 'all' && !(b.brands || []).includes(brandVal)) return false;
+
+                // 5. Invoice Number Filter
+                if (invoiceVal !== 'all' && b.billNo !== invoiceVal) return false;
 
                 return true;
             });
+
+            // Sorting logic
+            if (sortVal === 'price-low-high') {
+                filtered.sort((a, b) => Number(a.amount) - Number(b.amount));
+            } else if (sortVal === 'price-high-low') {
+                filtered.sort((a, b) => Number(b.amount) - Number(a.amount));
+            }
 
             if (filtered.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="12" class="p-6 text-center text-slate-400">No bills found</td></tr>`;
@@ -1908,7 +1956,7 @@
                 const bal = getBillBalance(b);
                 const isPaid = bal <= 0;
                 const brandTags = (b.brands || ['Lalitha Naturals']).map(br => `<span class="px-1.5 py-0.5 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 text-[10px] font-medium mr-1">${br}</span>`).join('');
-                
+
                 let dueStatusHtml = '-';
                 if (!isPaid && b.dueDate) {
                     const dueDateObj = new Date(b.dueDate);
