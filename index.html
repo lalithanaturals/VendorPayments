@@ -52,11 +52,10 @@
     </style>
 </head>
 <body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-200 flex flex-col">
-
     <!-- App Container -->
     <div id="app" class="flex flex-col h-full overflow-hidden">
         
-        <!-- Header -->
+        <!-- Minimalist Header -->
         <header class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-3.5 flex items-center justify-between shrink-0 z-20 shadow-xs">
             <div class="flex items-center space-x-3">
                 <div class="h-9 w-9 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold shadow-md shadow-brand-600/20 text-base">
@@ -79,7 +78,7 @@
                         <option value="admin">Admin</option>
                     </select>
                 </div>
-                <button onclick="openModal('quickActionModal')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
+                <button onclick="checkAdminAction(() => openModal('quickActionModal'))" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
                     <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                     <span>Quick Action</span>
                 </button>
@@ -93,7 +92,7 @@
         <!-- Main Body Layout -->
         <div class="flex flex-1 overflow-hidden">
             
-            <!-- Sidebar Navigation -->
+            <!-- Clean Sidebar Navigation -->
             <aside class="w-18 md:w-56 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 flex flex-col justify-between shrink-0 z-10">
                 <nav class="p-3 space-y-1 overflow-y-auto">
                     <button onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-btn w-full flex items-center space-x-3 px-3 py-2.5 rounded-xl text-xs font-medium transition bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 cursor-pointer">
@@ -218,24 +217,35 @@
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Vendors & Ledgers</h2>
-                            <p class="text-xs text-slate-500 dark:text-slate-400">Manage vendor profiles, filter by brand and vendor, and download reports.</p>
+                            <p class="text-xs text-slate-500 dark:text-slate-400">Manage vendor profiles, filter by vendor and brand, and download reports.</p>
                         </div>
-                        <button onclick="openModal('vendorModal')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
+                        <button onclick="checkAdminAction(() => openModal('vendorModal'))" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
                             <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
                             <span>Add Vendor</span>
                         </button>
                     </div>
 
+                    <!-- Vendor Search & Filter Bar -->
                     <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
                         <div class="relative w-full sm:w-80">
                             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
-                            <input type="text" id="vendor-search" oninput="renderVendorList()" placeholder="Search vendors..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                            <input type="text" id="vendor-search" oninput="renderVendorList()" placeholder="Search vendors by name or phone..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
                         </div>
-                        <div class="flex items-center space-x-2 w-full sm:w-auto">
-                            <span class="text-xs text-slate-400 font-medium whitespace-nowrap">Filter Brand:</span>
-                            <select id="vendor-filter-brand" onchange="renderVendorList()" class="w-full sm:w-auto px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
-                                <option value="all">All Brands</option>
-                            </select>
+                        <div class="flex items-center space-x-3 w-full sm:w-auto">
+                            <!-- Vendor Name Filter Dropdown -->
+                            <div class="flex items-center space-x-1.5">
+                                <span class="text-xs text-slate-400 font-medium whitespace-nowrap">Vendor:</span>
+                                <select id="vendor-filter-name" onchange="renderVendorList()" class="w-full sm:w-auto px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                    <option value="all">All Vendors</option>
+                                </select>
+                            </div>
+                            <!-- Brand Name Filter Dropdown -->
+                            <div class="flex items-center space-x-1.5">
+                                <span class="text-xs text-slate-400 font-medium whitespace-nowrap">Brand:</span>
+                                <select id="vendor-filter-brand" onchange="renderVendorList()" class="w-full sm:w-auto px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                    <option value="all">All Brands</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
 
@@ -259,7 +269,7 @@
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Bills & Invoices</h2>
                             <p class="text-xs text-slate-500 dark:text-slate-400">Record and track all vendor bills with brand tags and attachments.</p>
                         </div>
-                        <button onclick="openModal('billModal')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
+                        <button onclick="checkAdminAction(() => openModal('billModal'))" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
                             <i data-lucide="plus" class="w-3.5 h-3.5"></i>
                             <span>Record Bill</span>
                         </button>
@@ -272,73 +282,80 @@
                         <button onclick="setBillTab('unpaid')" id="bill-tab-unpaid" class="pb-3 text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-white transition cursor-pointer">Unpaid</button>
                     </div>
 
-                    <!-- Toolbar: Filter Button & Sort By Button -->
-                    <div class="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs">
-                        <div class="flex items-center space-x-3">
-                            <button onclick="toggleFilterSection()" class="inline-flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-700 dark:text-brand-300 hover:bg-brand-100 text-xs font-bold transition cursor-pointer shadow-xs">
+                    <!-- Filter & Sort Action Bar -->
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div class="flex items-center space-x-2 w-full sm:w-auto">
+                            <!-- Filter Toggle Button -->
+                            <button onclick="toggleFilterPanel()" class="inline-flex items-center space-x-1.5 px-3.5 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-brand-50 hover:text-brand-600 text-xs font-semibold transition cursor-pointer">
                                 <i data-lucide="filter" class="w-4 h-4"></i>
                                 <span>Filter</span>
                             </button>
-                            <button onclick="clearAllFilters()" class="text-xs font-semibold text-slate-500 hover:text-rose-600 transition cursor-pointer">Clear Filters</button>
-                        </div>
 
-                        <!-- Sort By Button -->
-                        <div class="flex items-center space-x-2">
-                            <span class="text-xs text-slate-400 font-medium">Sort By:</span>
-                            <select id="bill-sort-select" onchange="renderBillsTable()" class="px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
-                                <option value="default">Default Order</option>
-                                <option value="price-low-high">Price: Low to High</option>
-                                <option value="price-high-low">Price: High to Low</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <!-- Filter Section Panel (Hidden by default) -->
-                    <div id="filterSectionPanel" class="hidden bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                            <!-- Due Date Filter -->
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Due Date</label>
-                                <select id="filter-duedate-select" onchange="toggleCustomDateInput(); renderBillsTable();" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
-                                    <option value="all">All Due Dates</option>
-                                    <option value="today">Today</option>
-                                    <option value="tomorrow">Tomorrow</option>
-                                    <option value="2days">In 2 days</option>
-                                    <option value="custom">Custom date range</option>
+                            <!-- Sort By Dropdown Button -->
+                            <div class="flex items-center space-x-1.5 bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-xl text-xs">
+                                <span class="text-slate-400 font-medium">Sort By:</span>
+                                <select id="bill-sort-select" onchange="renderBillsTable()" class="bg-transparent font-semibold text-slate-900 dark:text-white border-none focus:outline-none cursor-pointer">
+                                    <option value="default">Default</option>
+                                    <option value="price-low-high">Price: Low to High</option>
+                                    <option value="price-high-low">Price: High to Low</option>
                                 </select>
                             </div>
+                        </div>
 
-                            <!-- Vendor Name Filter (Alphabetically Sorted) -->
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Vendor Name</label>
-                                <select id="filter-vendor-select" onchange="renderBillsTable()" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                        <button onclick="clearAllFilters()" class="text-xs font-semibold text-rose-500 hover:underline cursor-pointer">Clear Filters</button>
+                    </div>
+
+                    <!-- Advanced Filter Panel (Collapsible) -->
+                    <div id="filter-panel" class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs hidden grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                        
+                        <!-- 1. Due Date Filter -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Due Date</label>
+                            <select id="filter-duedate" onchange="toggleCustomDateRange()" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                <option value="all">All Due Dates</option>
+                                <option value="today">Today</option>
+                                <option value="tomorrow">Tomorrow</option>
+                                <option value="2days">In 2 Days</option>
+                                <option value="custom">Custom Date Range</option>
+                            </select>
+                        </div>
+
+                        <!-- Custom Date Range Sub-inputs -->
+                        <div id="custom-date-box" class="hidden col-span-1 sm:col-span-2 flex items-center space-x-2 bg-slate-100 dark:bg-slate-800 p-2 rounded-xl text-[11px]">
+                            <span class="text-slate-400">From:</span>
+                            <input type="date" id="filter-from-date" onchange="renderBillsTable()" class="bg-transparent border-none text-slate-900 dark:text-white text-[11px] focus:outline-none">
+                            <span class="text-slate-400">To:</span>
+                            <input type="date" id="filter-to-date" onchange="renderBillsTable()" class="bg-transparent border-none text-slate-900 dark:text-white text-[11px] focus:outline-none">
+                        </div>
+
+                        <!-- 2. Vendor Name (Searchable Dropdown) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Vendor Name</label>
+                            <div class="space-y-1.5">
+                                <input type="text" id="filter-vendor-search" oninput="filterVendorDropdown()" placeholder="Search vendor..." class="w-full px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-[11px] border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                                <select id="filter-vendor" onchange="renderBillsTable()" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
                                     <option value="all">All Vendors</option>
                                 </select>
                             </div>
+                        </div>
 
-                            <!-- Brand Name Filter (Alphabetically Sorted) -->
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Brand Name</label>
-                                <select id="filter-brand-select" onchange="renderBillsTable()" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                        <!-- 3. Brand Name (Searchable Dropdown) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Brand Name</label>
+                            <div class="space-y-1.5">
+                                <input type="text" id="filter-brand-search" oninput="filterBrandDropdown()" placeholder="Search brand..." class="w-full px-2.5 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg text-[11px] border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                                <select id="filter-brand" onchange="renderBillsTable()" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
                                     <option value="all">All Brands</option>
-                                </select>
-                            </div>
-
-                            <!-- Invoice Number Filter (Alphabetically Sorted) -->
-                            <div>
-                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Invoice Number</label>
-                                <select id="filter-invoice-select" onchange="renderBillsTable()" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
-                                    <option value="all">All Invoices</option>
                                 </select>
                             </div>
                         </div>
 
-                        <!-- Custom Date Range Box -->
-                        <div id="filter-custom-date-box" class="hidden items-center space-x-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
-                            <span class="text-slate-400 font-medium">From:</span>
-                            <input type="date" id="bill-from-date" onchange="renderBillsTable()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none text-slate-900 dark:text-white focus:outline-none">
-                            <span class="text-slate-400 font-medium">To:</span>
-                            <input type="date" id="bill-to-date" onchange="renderBillsTable()" class="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none text-slate-900 dark:text-white focus:outline-none">
+                        <!-- 4. Invoice Number (Alphabetically Sorted Dropdown with Search) -->
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-400 mb-1">Invoice Number</label>
+                            <select id="filter-invoice" onchange="renderBillsTable()" class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs font-semibold border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white cursor-pointer">
+                                <option value="all">All Invoices</option>
+                            </select>
                         </div>
                     </div>
 
@@ -374,10 +391,25 @@
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Vendor Credit Notes</h2>
                             <p class="text-xs text-slate-500 dark:text-slate-400">Record debit/credit notes for purchase returns or price adjustments.</p>
                         </div>
-                        <button onclick="openModal('creditModal')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
+                        <button onclick="checkAdminAction(() => openModal('creditModal'))" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
                             <i data-lucide="receipt" class="w-3.5 h-3.5"></i>
                             <span>New Credit Note</span>
                         </button>
+                    </div>
+
+                    <!-- Credit Note Search / Filter Bar -->
+                    <div class="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div class="flex items-center space-x-3 w-full sm:w-auto flex-wrap gap-y-2">
+                            <div class="relative w-full sm:w-64">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                <input type="text" id="credit-search-vendor" oninput="renderCreditsTable()" placeholder="Search vendor name..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                            </div>
+                            <div class="relative w-full sm:w-64">
+                                <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-2.5"></i>
+                                <input type="text" id="credit-search-brand" oninput="renderCreditsTable()" placeholder="Search brand name..." class="w-full pl-9 pr-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white">
+                            </div>
+                        </div>
+                        <button onclick="document.getElementById('credit-search-vendor').value=''; document.getElementById('credit-search-brand').value=''; renderCreditsTable();" class="text-xs font-semibold text-rose-500 hover:underline cursor-pointer">Clear Filters</button>
                     </div>
 
                     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-xs overflow-hidden">
@@ -407,7 +439,7 @@
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Payment Records</h2>
                             <p class="text-xs text-slate-500 dark:text-slate-400">Track all outward vendor payments and modes.</p>
                         </div>
-                        <button onclick="openModal('paymentModal')" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
+                        <button onclick="checkAdminAction(() => openModal('paymentModal'))" class="inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs transition cursor-pointer">
                             <i data-lucide="indian-rupee" class="w-3.5 h-3.5"></i>
                             <span>New Payment</span>
                         </button>
@@ -432,6 +464,7 @@
                         </div>
                     </div>
                 </section>
+
             </main>
         </div>
     </div>
@@ -446,19 +479,19 @@
                 <button onclick="closeModal('quickActionModal')" class="p-1 rounded-lg text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
             <div class="grid grid-cols-2 gap-2.5">
-                <button onclick="closeModal('quickActionModal'); openModal('billModal')" class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 bg-slate-50 dark:bg-slate-800/30 text-left transition group cursor-pointer">
+                <button onclick="closeModal('quickActionModal'); checkAdminAction(() => openModal('billModal'))" class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 bg-slate-50 dark:bg-slate-800/30 text-left transition group cursor-pointer">
                     <i data-lucide="file-text" class="w-4 h-4 text-brand-600 mb-1.5"></i>
                     <span class="font-bold text-xs block text-slate-900 dark:text-white">New Bill</span>
                 </button>
-                <button onclick="closeModal('quickActionModal'); openModal('paymentModal')" class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 bg-slate-50 dark:bg-slate-800/30 text-left transition group cursor-pointer">
+                <button onclick="closeModal('quickActionModal'); checkAdminAction(() => openModal('paymentModal'))" class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 bg-slate-50 dark:bg-slate-800/30 text-left transition group cursor-pointer">
                     <i data-lucide="indian-rupee" class="w-4 h-4 text-emerald-600 mb-1.5"></i>
                     <span class="font-bold text-xs block text-slate-900 dark:text-white">Payment</span>
                 </button>
-                <button onclick="closeModal('quickActionModal'); openModal('creditModal')" class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 bg-slate-50 dark:bg-slate-800/30 text-left transition group cursor-pointer">
+                <button onclick="closeModal('quickActionModal'); checkAdminAction(() => openModal('creditModal'))" class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 bg-slate-50 dark:bg-slate-800/30 text-left transition group cursor-pointer">
                     <i data-lucide="receipt" class="w-4 h-4 text-purple-600 mb-1.5"></i>
                     <span class="font-bold text-xs block text-slate-900 dark:text-white">Credit Note</span>
                 </button>
-                <button onclick="closeModal('quickActionModal'); openModal('vendorModal')" class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 bg-slate-50 dark:bg-slate-800/30 text-left transition group cursor-pointer">
+                <button onclick="closeModal('quickActionModal'); checkAdminAction(() => openModal('vendorModal'))" class="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-brand-500 bg-slate-50 dark:bg-slate-800/30 text-left transition group cursor-pointer">
                     <i data-lucide="user-plus" class="w-4 h-4 text-blue-600 mb-1.5"></i>
                     <span class="font-bold text-xs block text-slate-900 dark:text-white">Vendor</span>
                 </button>
@@ -580,20 +613,21 @@
         </div>
     </div>
 
-    <!-- Admin PIN Verification Modal (Ivory background `#f5f5dc`) -->
+    <!-- Admin PIN Verification Modal (Ivory background #f5f5dc) -->
     <div id="adminPinModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-50 flex items-center justify-center p-4 hidden">
         <div class="bg-[#f5f5dc] dark:bg-slate-900 rounded-2xl border border-slate-300 dark:border-slate-800 shadow-2xl max-w-sm w-full p-6 space-y-4">
             <div class="flex items-center justify-between">
                 <h3 class="text-base font-bold text-slate-900 dark:text-white">Admin PIN Verification</h3>
-                <button onclick="closeModal('adminPinModal'); document.getElementById('userRoleSelect').value='user';" class="p-1 rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
+                <button onclick="closeModal('adminPinModal'); if(document.getElementById('userRoleSelect').value !== 'admin') document.getElementById('userRoleSelect').value='user';" class="p-1 rounded-lg text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 cursor-pointer"><i data-lucide="x" class="w-4 h-4"></i></button>
             </div>
-            <p class="text-xs text-slate-700 dark:text-slate-300">Enter Admin PIN to switch to Admin mode.</p>
+            <p id="adminPinModalMsg" class="text-xs text-slate-700 dark:text-slate-300">Enter Admin PIN to perform this action.</p>
             <div>
                 <label class="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1">Enter 4-Digit PIN *</label>
+                <!-- Masked PIN input -->
                 <input type="password" inputmode="numeric" pattern="[0-9]*" id="adminPinInput" maxlength="4" class="w-full text-center tracking-widest text-base font-bold px-3 py-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-300 dark:border-slate-700 focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white" placeholder="****">
             </div>
             <div class="flex justify-end space-x-2 pt-2">
-                <button type="button" onclick="closeModal('adminPinModal'); document.getElementById('userRoleSelect').value='user';" class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 cursor-pointer">Cancel</button>
+                <button type="button" onclick="closeModal('adminPinModal'); if(document.getElementById('userRoleSelect').value !== 'admin') document.getElementById('userRoleSelect').value='user';" class="px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-800 dark:text-slate-200 cursor-pointer">Cancel</button>
                 <button type="button" onclick="verifyAdminPin()" class="px-3.5 py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold shadow-xs cursor-pointer">Verify PIN</button>
             </div>
         </div>
@@ -738,7 +772,7 @@
 
     <!-- JavaScript Application Logic -->
     <script>
-        const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V6';
+        const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V7';
         let dbState = {
             vendors: [
                 { id: 'v_1', name: 'Organic Agro Farms', contactPerson: 'Suresh Rao', phone: '9848012345', gstin: '37AABCO1234K1ZV', openingBalance: 5000, address: 'Rythu Bazaar Road, Vizag' },
@@ -768,8 +802,11 @@
         let selectedVendorIdForLedger = null;
         let ledgerFromDate = '';
         let ledgerToDate = '';
-        let currentUserRole = 'user'; // 'user' (Manager) or 'admin'
-        let currentBillTab = 'all'; // 'all', 'paid', 'unpaid'
+        let currentBillTab = 'all';
+        let currentUserRole = 'user';
+        let storedAllVendors = [];
+        let storedAllBrands = [];
+        let pendingAdminAction = null;
 
         window.onload = function() {
             loadData();
@@ -779,7 +816,7 @@
             }
             populateVendorDropdowns();
             populateBrandDropdowns();
-            populateBillFilterDropdowns();
+            populateAdvancedFilterDropdowns();
             switchTab('dashboard');
             lucide.createIcons();
         };
@@ -799,7 +836,7 @@
             localStorage.setItem(STORAGE_KEY, JSON.stringify(dbState));
             populateVendorDropdowns();
             populateBrandDropdowns();
-            populateBillFilterDropdowns();
+            populateAdvancedFilterDropdowns();
         }
 
         function showToast(msg) {
@@ -877,7 +914,10 @@
 
             if (tabId === 'dashboard') renderDashboard();
             if (tabId === 'vendors') renderVendorList();
-            if (tabId === 'bills') { populateBillFilterDropdowns(); renderBillsTable(); }
+            if (tabId === 'bills') {
+                populateAdvancedFilterDropdowns();
+                renderBillsTable();
+            }
             if (tabId === 'payments') renderPaymentsTable();
             if (tabId === 'credits') renderCreditsTable();
             
@@ -886,14 +926,38 @@
             }
         }
 
+        function toggleFilterPanel() {
+            const panel = document.getElementById('filter-panel');
+            if (panel) {
+                panel.classList.toggle('hidden');
+            }
+        }
+
         function promptRoleSwitch(role) {
             if (role === 'admin') {
                 document.getElementById('adminPinInput').value = '';
+                document.getElementById('adminPinModalMsg').innerText = 'Enter Admin PIN to switch to Admin mode.';
+                pendingAdminAction = null;
                 openModal('adminPinModal');
             } else {
                 currentUserRole = 'user';
+                document.getElementById('userRoleSelect').value = 'user';
                 showToast('Switched to Manager role');
                 renderBillsTable();
+                renderCreditsTable();
+                renderPaymentsTable();
+                renderVendorLedger();
+            }
+        }
+
+        function checkAdminAction(callback) {
+            if (currentUserRole === 'admin') {
+                callback();
+            } else {
+                pendingAdminAction = callback;
+                document.getElementById('adminPinInput').value = '';
+                document.getElementById('adminPinModalMsg').innerText = 'Admin authorization required to perform this action.';
+                openModal('adminPinModal');
             }
         }
 
@@ -901,9 +965,18 @@
             const pin = document.getElementById('adminPinInput').value.trim();
             if (pin === '1995') {
                 currentUserRole = 'admin';
+                document.getElementById('userRoleSelect').value = 'admin';
                 closeModal('adminPinModal');
                 showToast('Admin access granted');
                 renderBillsTable();
+                renderCreditsTable();
+                renderPaymentsTable();
+                renderVendorLedger();
+                if (pendingAdminAction) {
+                    const action = pendingAdminAction;
+                    pendingAdminAction = null;
+                    action();
+                }
             } else {
                 showToast('Incorrect PIN. Access denied.');
             }
@@ -933,22 +1006,31 @@
             dbState.bills.filter(b => b.vendorId === vendorId).forEach(b => {
                 bal += Number(b.amount);
             });
+            dbState.credits.filter(c => c.vendorId === vendorId).forEach(c => {
+                if (!c.billId) {
+                    bal -= Number(c.amount);
+                }
+            });
             dbState.payments.filter(p => p.vendorId === vendorId).forEach(p => {
                 bal -= Number(p.amount);
-            });
-            dbState.credits.filter(c => c.vendorId === vendorId).forEach(c => {
-                bal -= Number(c.amount);
             });
             return bal;
         }
 
         function populateVendorDropdowns() {
-            const sortedVendors = [...dbState.vendors].sort((a, b) => a.name.localeCompare(b.name));
-            const opts = sortedVendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+            const opts = dbState.vendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
             ['bVendorId', 'pVendorId', 'cVmId'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.innerHTML = `<option value="">Select Vendor...</option>` + opts;
             });
+
+            const vendorFilterName = document.getElementById('vendor-filter-name');
+            if (vendorFilterName) {
+                const currentVal = vendorFilterName.value;
+                const sortedVendors = [...dbState.vendors].sort((a, b) => a.name.localeCompare(b.name));
+                vendorFilterName.innerHTML = `<option value="all">All Vendors</option>` + sortedVendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+                vendorFilterName.value = currentVal || 'all';
+            }
         }
 
         function populateBrandDropdowns() {
@@ -961,40 +1043,101 @@
             }
         }
 
-        function populateBillFilterDropdowns() {
-            // Vendor Name Filter (Alphabetically Sorted)
-            const sortedVendors = [...dbState.vendors].sort((a, b) => a.name.localeCompare(b.name));
-            const vSelect = document.getElementById('filter-vendor-select');
-            if (vSelect) {
-                const cur = vSelect.value;
-                vSelect.innerHTML = `<option value="all">All Vendors</option>` + sortedVendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
-                vSelect.value = cur;
+        function populateAdvancedFilterDropdowns() {
+            const vendorFilter = document.getElementById('filter-vendor');
+            if (vendorFilter) {
+                const currentVendor = vendorFilter.value;
+                const sortedVendors = [...dbState.vendors].sort((a, b) => a.name.localeCompare(b.name));
+                storedAllVendors = sortedVendors;
+                vendorFilter.innerHTML = `<option value="all">All Vendors</option>` + sortedVendors.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+                vendorFilter.value = currentVendor || 'all';
             }
 
-            // Brand Name Filter (Alphabetically Sorted)
-            const sortedBrands = [...dbState.brands].sort((a, b) => a.localeCompare(b));
-            const bSelect = document.getElementById('filter-brand-select');
-            if (bSelect) {
-                const cur = bSelect.value;
-                bSelect.innerHTML = `<option value="all">All Brands</option>` + sortedBrands.map(b => `<option value="${b}">${b}</option>`).join('');
-                bSelect.value = cur;
+            const brandFilter = document.getElementById('filter-brand');
+            if (brandFilter) {
+                const currentBrand = brandFilter.value;
+                const sortedBrands = [...dbState.brands].sort((a, b) => a.localeCompare(b));
+                storedAllBrands = sortedBrands;
+                brandFilter.innerHTML = `<option value="all">All Brands</option>` + sortedBrands.map(b => `<option value="${b}">${b}</option>`).join('');
+                brandFilter.value = currentBrand || 'all';
             }
 
-            // Invoice Number Filter (Alphabetically Sorted)
-            const uniqueInvoices = [...new Set(dbState.bills.map(b => b.billNo))].sort((a, b) => a.localeCompare(b));
-            const iSelect = document.getElementById('filter-invoice-select');
-            if (iSelect) {
-                const cur = iSelect.value;
-                iSelect.innerHTML = `<option value="all">All Invoices</option>` + uniqueInvoices.map(inv => `<option value="${inv}">#${inv}</option>`).join('');
-                iSelect.value = cur;
+            const invoiceFilter = document.getElementById('filter-invoice');
+            if (invoiceFilter) {
+                const currentInvoice = invoiceFilter.value;
+                const sortedInvoices = [...dbState.bills].map(b => b.billNo).sort((a, b) => a.localeCompare(b));
+                invoiceFilter.innerHTML = `<option value="all">All Invoices</option>` + sortedInvoices.map(inv => `<option value="${inv}">#${inv}</option>`).join('');
+                invoiceFilter.value = currentInvoice || 'all';
             }
+        }
+
+        function filterVendorDropdown() {
+            const query = (document.getElementById('filter-vendor-search')?.value || '').toLowerCase();
+            const vendorFilter = document.getElementById('filter-vendor');
+            if (!vendorFilter) return;
+            const currentVal = vendorFilter.value;
+            const filtered = storedAllVendors.filter(v => v.name.toLowerCase().includes(query));
+            vendorFilter.innerHTML = `<option value="all">All Vendors</option>` + filtered.map(v => `<option value="${v.id}">${v.name}</option>`).join('');
+            vendorFilter.value = filtered.some(v => v.id === currentVal) ? currentVal : 'all';
+            renderBillsTable();
+        }
+
+        function filterBrandDropdown() {
+            const query = (document.getElementById('filter-brand-search')?.value || '').toLowerCase();
+            const brandFilter = document.getElementById('filter-brand');
+            if (!brandFilter) return;
+            const currentVal = brandFilter.value;
+            const filtered = storedAllBrands.filter(b => b.toLowerCase().includes(query));
+            brandFilter.innerHTML = `<option value="all">All Brands</option>` + filtered.map(b => `<option value="${b}">${b}</option>`).join('');
+            brandFilter.value = filtered.includes(currentVal) ? currentVal : 'all';
+            renderBillsTable();
+        }
+
+        function clearAllFilters() {
+            const dueDateSel = document.getElementById('filter-duedate');
+            if (dueDateSel) dueDateSel.value = 'all';
+            const vSearch = document.getElementById('filter-vendor-search');
+            if (vSearch) vSearch.value = '';
+            const vendorSel = document.getElementById('filter-vendor');
+            if (vendorSel) vendorSel.value = 'all';
+            const bSearch = document.getElementById('filter-brand-search');
+            if (bSearch) bSearch.value = '';
+            const brandSel = document.getElementById('filter-brand');
+            if (brandSel) brandSel.value = 'all';
+            const invoiceSel = document.getElementById('filter-invoice');
+            if (invoiceSel) invoiceSel.value = 'all';
+            const sortSel = document.getElementById('bill-sort-select');
+            if (sortSel) sortSel.value = 'default';
+            
+            filterVendorDropdown();
+            filterBrandDropdown();
+            toggleCustomDateRange();
+            renderBillsTable();
+            showToast('All filters cleared');
+        }
+
+        function toggleCustomDateRange() {
+            const val = document.getElementById('filter-duedate')?.value;
+            const box = document.getElementById('custom-date-box');
+            if (!box) return;
+            if (val === 'custom') {
+                box.classList.remove('hidden');
+                box.classList.add('flex');
+                const fromEl = document.getElementById('filter-from-date');
+                const toEl = document.getElementById('filter-to-date');
+                if (fromEl && !fromEl.value) fromEl.value = new Date().toISOString().split('T')[0];
+                if (toEl && !toEl.value) toEl.value = new Date().toISOString().split('T')[0];
+            } else {
+                box.classList.add('hidden');
+                box.classList.remove('flex');
+            }
+            renderBillsTable();
         }
 
         function renderBillBrandCheckboxes(selectedBrands = []) {
             const container = document.getElementById('bBrandContainer');
             if (!container) return;
-            const sortedBrands = [...dbState.brands].sort((a, b) => a.localeCompare(b));
-            container.innerHTML = sortedBrands.map((b, idx) => {
+            container.innerHTML = dbState.brands.map((b, idx) => {
                 const isChecked = selectedBrands.length > 0 ? selectedBrands.includes(b) : (idx === 0);
                 return `
                     <label class="flex items-center space-x-2 text-xs cursor-pointer">
@@ -1013,7 +1156,7 @@
                     dbState.brands.push(trimmed);
                     saveData();
                     renderBillBrandCheckboxes();
-                    populateBillFilterDropdowns();
+                    populateAdvancedFilterDropdowns();
                     showToast(`Brand "${trimmed}" added successfully`);
                 } else {
                     showToast('Brand already exists');
@@ -1102,7 +1245,7 @@
         }
 
         function triggerEditBill(id) {
-            openBillEditModal(id);
+            checkAdminAction(() => openBillEditModal(id));
         }
 
         function openBillEditModal(id) {
@@ -1176,6 +1319,8 @@
             closeModal('paymentModal');
             showToast('Payment recorded successfully');
             renderDashboard();
+            renderBillsTable();
+            renderPaymentsTable();
         }
 
         function handleCreditSubmit(e) {
@@ -1191,40 +1336,48 @@
             dbState.credits.push({ id, vendorId, creditNo, date, billId, amount, reason });
             saveData();
             closeModal('creditModal');
-            showToast('Credit note recorded successfully');
+            showToast('Credit note recorded and deducted from invoice balance');
             renderDashboard();
+            renderBillsTable();
             renderCreditsTable();
+            if (selectedVendorIdForLedger === vendorId) {
+                renderVendorLedger();
+            }
         }
 
         function deleteBill(id) {
-            if (currentUserRole !== 'admin') {
-                showToast('Permission denied: Only Admin can delete bills');
-                return;
-            }
-            if (confirm('Are you sure you want to delete this bill?')) {
-                dbState.bills = dbState.bills.filter(b => b.id !== id);
-                saveData();
-                renderBillsTable();
-                showToast('Bill deleted');
-            }
+            checkAdminAction(() => {
+                if (confirm('Are you sure you want to delete this bill?')) {
+                    dbState.bills = dbState.bills.filter(b => b.id !== id);
+                    saveData();
+                    renderBillsTable();
+                    showToast('Bill deleted');
+                }
+            });
         }
 
         function deletePayment(id) {
-            if (confirm('Are you sure you want to delete this payment record?')) {
-                dbState.payments = dbState.payments.filter(p => p.id !== id);
-                saveData();
-                renderPaymentsTable();
-                showToast('Payment deleted');
-            }
+            checkAdminAction(() => {
+                if (confirm('Are you sure you want to delete this payment record?')) {
+                    dbState.payments = dbState.payments.filter(p => p.id !== id);
+                    saveData();
+                    renderPaymentsTable();
+                    renderBillsTable();
+                    showToast('Payment deleted');
+                }
+            });
         }
 
         function deleteCredit(id) {
-            if (confirm('Are you sure you want to delete this credit note?')) {
-                dbState.credits = dbState.credits.filter(c => c.id !== id);
-                saveData();
-                renderCreditsTable();
-                showToast('Credit note deleted');
-            }
+            checkAdminAction(() => {
+                if (confirm('Are you sure you want to delete this credit note?')) {
+                    dbState.credits = dbState.credits.filter(c => c.id !== id);
+                    saveData();
+                    renderCreditsTable();
+                    renderBillsTable();
+                    showToast('Credit note deleted');
+                }
+            });
         }
 
         function renderDashboard() {
@@ -1359,7 +1512,7 @@
                         <td class="p-3.5 text-right text-slate-900 dark:text-white">${formatCurrency(b.amount)}</td>
                         <td class="p-3.5 text-right font-bold text-rose-600">${formatCurrency(bal)}</td>
                         <td class="p-3.5 text-center">
-                            <button onclick="openModal('paymentModal'); document.getElementById('pVendorId').value='${b.vendorId}'; updateVendorBillsDropdown(); document.getElementById('pBillId').value='${b.id}'; document.getElementById('pAmount').value='${bal}';" class="px-2.5 py-1 rounded-lg bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 font-semibold hover:bg-brand-100 cursor-pointer">Pay</button>
+                            <button onclick="checkAdminAction(() => { openModal('paymentModal'); document.getElementById('pVendorId').value='${b.vendorId}'; updateVendorBillsDropdown(); document.getElementById('pBillId').value='${b.id}'; document.getElementById('pAmount').value='${bal}'; })" class="px-2.5 py-1 rounded-lg bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 font-semibold hover:bg-brand-100 cursor-pointer">Pay</button>
                         </td>
                     </tr>
                 `;
@@ -1409,8 +1562,8 @@
                                 const v = dbState.vendors.find(ven => ven.id === b.vendorId);
                                 const bal = getBillBalance(b);
                                 return `
-                                    <div onclick="event.stopPropagation(); openModal('paymentModal'); document.getElementById('pVendorId').value='${b.vendorId}'; updateVendorBillsDropdown(); document.getElementById('pBillId').value='${b.id}'; document.getElementById('pAmount').value='${bal}';"
-                                          class="text-[9px] bg-white dark:bg-slate-800 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 truncate hover:bg-brand-50 dark:hover:bg-brand-950/50 hover:border-brand-400 transition cursor-pointer"
+                                    <div onclick="event.stopPropagation(); checkAdminAction(() => { openModal('paymentModal'); document.getElementById('pVendorId').value='${b.vendorId}'; updateVendorBillsDropdown(); document.getElementById('pBillId').value='${b.id}'; document.getElementById('pAmount').value='${bal}'; })"
+                                         class="text-[9px] bg-white dark:bg-slate-800 px-1 py-0.5 rounded border border-slate-200 dark:border-slate-700 truncate hover:bg-brand-50 dark:hover:bg-brand-950/50 hover:border-brand-400 transition cursor-pointer"
                                          title="Click to Pay Bill #${b.billNo} - ${v?.name || ''}">
                                         <span class="font-semibold">${v?.name || ''}:</span> ${formatCurrency(bal)}
                                     </div>
@@ -1425,13 +1578,17 @@
 
         function renderVendorList() {
             const search = document.getElementById('vendor-search').value.toLowerCase();
+            const vendorNameFilter = document.getElementById('vendor-filter-name').value;
             const brandFilter = document.getElementById('vendor-filter-brand').value;
             const container = document.getElementById('vendor-list-container');
 
-            let sortedVendors = [...dbState.vendors].sort((a, b) => a.name.localeCompare(b.name));
-            let filtered = sortedVendors.filter(v => {
-                const matchesSearch = v.name.toLowerCase().includes(search);
+            let filtered = dbState.vendors.filter(v => {
+                const matchesSearch = v.name.toLowerCase().includes(search) || 
+                                    (v.phone && v.phone.includes(search)) || 
+                                    (v.contactPerson && v.contactPerson.toLowerCase().includes(search));
                 if (!matchesSearch) return false;
+
+                if (vendorNameFilter !== 'all' && v.id !== vendorNameFilter) return false;
 
                 if (brandFilter !== 'all') {
                     const vendorBills = dbState.bills.filter(b => b.vendorId === v.id);
@@ -1454,7 +1611,7 @@
                 const out = getVendorOutstanding(v.id);
                 const isSelected = v.id === selectedVendorIdForLedger;
                 const vendorBills = dbState.bills.filter(b => b.vendorId === v.id);
-                const vendorBrands = [...new Set(vendorBills.flatMap(b => b.brands || []))].sort((a, b) => a.localeCompare(b));
+                const vendorBrands = [...new Set(vendorBills.flatMap(b => b.brands || []))];
 
                 return `
                     <div onclick="selectVendorForLedger('${v.id}')" class="p-3.5 cursor-pointer transition ${isSelected ? 'bg-brand-50/60 dark:bg-brand-950/40 border-l-4 border-brand-600' : 'hover:bg-slate-50 dark:hover:bg-slate-800/40'}">
@@ -1503,7 +1660,19 @@
 
             dbState.bills.filter(b => b.vendorId === vendor.id).forEach(b => {
                 const brandStr = (b.brands || []).join(', ');
-                rawTxns.push({ date: b.billDate, desc: `Bill #${b.billNo} [Brands: ${brandStr}] (${b.notes || ''})`, debit: Number(b.amount), credit: 0 });
+                const linkedCredits = dbState.credits.filter(c => c.billId === b.id);
+                let creditNoteText = '';
+                if (linkedCredits.length > 0) {
+                    const cnDetails = linkedCredits.map(cn => `CN #${cn.creditNo}: ₹${cn.amount} (${cn.reason})`).join(', ');
+                    creditNoteText = ` | [Credit Notes applied: ${cnDetails}]`;
+                }
+                
+                let netBillAmount = Number(b.amount);
+                linkedCredits.forEach(cn => {
+                    netBillAmount -= Number(cn.amount);
+                });
+
+                rawTxns.push({ date: b.billDate, desc: `Bill #${b.billNo} [Brands: ${brandStr}] (${b.notes || ''})${creditNoteText}`, debit: Math.max(0, netBillAmount), credit: 0 });
             });
 
             dbState.payments.filter(p => p.vendorId === vendor.id).forEach(p => {
@@ -1512,10 +1681,8 @@
                 rawTxns.push({ date: p.date, desc: `Payment via ${p.mode}${billRef} [Ref: ${p.reference || 'N/A'}]`, debit: 0, credit: Number(p.amount) });
             });
 
-            dbState.credits.filter(c => c.vendorId === vendor.id).forEach(c => {
-                const linkedBill = dbState.bills.find(b => b.id === c.billId);
-                const billRef = linkedBill ? ` (Linked Bill #${linkedBill.billNo})` : '';
-                rawTxns.push({ date: c.date, desc: `Credit Note #${c.creditNo}${billRef} (${c.reason})`, debit: 0, credit: Number(c.amount) });
+            dbState.credits.filter(c => c.vendorId === vendor.id && !c.billId).forEach(c => {
+                rawTxns.push({ date: c.date, desc: `Credit Note #${c.creditNo} (${c.reason})`, debit: 0, credit: Number(c.amount) });
             });
 
             rawTxns.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -1557,14 +1724,25 @@
                             <span class="text-slate-400">To:</span>
                             <input type="date" id="ledger-to-date" value="${ledgerToDate}" onchange="setLedgerDateFilter()" class="bg-transparent border-none text-slate-900 dark:text-white text-[11px] focus:outline-none">
                         </div>
-                        <button onclick="openModal('ledgerFormatModal')" title="Download Statement" class="px-3 py-1.5 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 hover:bg-brand-100 text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
-                            <i data-lucide="download" class="w-3.5 h-3.5"></i>
-                            <span>Download Statement</span>
-                        </button>
-                        <button onclick="downloadAllVendorsMultiSheetExcel()" title="Download All Vendors (Multi-Sheet Excel)" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
-                            <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
-                            <span>All Vendors Excel</span>
-                        </button>
+                        ${currentUserRole === 'admin' ? `
+                            <button onclick="openModal('ledgerFormatModal')" title="Download Statement" class="px-3 py-1.5 rounded-xl bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 hover:bg-brand-100 text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
+                                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                                <span>Download Statement</span>
+                            </button>
+                            <button onclick="downloadAllVendorsMultiSheetExcel()" title="Download All Vendors (Multi-Sheet Excel)" class="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">
+                                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+                                <span>All Vendors Excel</span>
+                            </button>
+                        ` : `
+                            <button onclick="checkAdminAction(() => openModal('ledgerFormatModal'))" title="Admin Only: Download Statement" class="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-500 text-xs font-semibold flex items-center space-x-1.5 cursor-pointer">
+                                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                                <span>Download Statement</span>
+                            </button>
+                            <button onclick="checkAdminAction(downloadAllVendorsMultiSheetExcel)" title="Admin Only: All Vendors Excel" class="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-500 text-xs font-semibold flex items-center space-x-1.5 cursor-pointer">
+                                <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+                                <span>All Vendors Excel</span>
+                            </button>
+                        `}
                     </div>
                 </div>
                 <div class="flex-1 overflow-y-auto">
@@ -1840,106 +2018,54 @@
             renderBillsTable();
         }
 
-        function toggleFilterSection() {
-            const panel = document.getElementById('filterSectionPanel');
-            if (panel) {
-                panel.classList.toggle('hidden');
-            }
-        }
-
-        function toggleCustomDateInput() {
-            const dueDateSelect = document.getElementById('filter-duedate-select');
-            const dateBox = document.getElementById('filter-custom-date-box');
-            if (!dueDateSelect || !dateBox) return;
-
-            if (dueDateSelect.value === 'custom') {
-                dateBox.classList.remove('hidden');
-                dateBox.classList.add('flex');
-                const fromDateEl = document.getElementById('bill-from-date');
-                const toDateEl = document.getElementById('bill-to-date');
-                if (fromDateEl && !fromDateEl.value) fromDateEl.value = new Date().toISOString().split('T')[0];
-                if (toDateEl && !toDateEl.value) toDateEl.value = new Date().toISOString().split('T')[0];
-            } else {
-                dateBox.classList.add('hidden');
-                dateBox.classList.remove('flex');
-            }
-        }
-
-        function clearAllFilters() {
-            const dueDateSelect = document.getElementById('filter-duedate-select');
-            if (dueDateSelect) dueDateSelect.value = 'all';
-
-            const vendorSelect = document.getElementById('filter-vendor-select');
-            if (vendorSelect) vendorSelect.value = 'all';
-
-            const brandSelect = document.getElementById('filter-brand-select');
-            if (brandSelect) brandSelect.value = 'all';
-
-            const invoiceSelect = document.getElementById('filter-invoice-select');
-            if (invoiceSelect) invoiceSelect.value = 'all';
-
-            const sortSelect = document.getElementById('bill-sort-select');
-            if (sortSelect) sortSelect.value = 'default';
-
-            toggleCustomDateInput();
-            renderBillsTable();
-            showToast('All filters cleared');
-        }
-
         function renderBillsTable() {
-            const dueDateSelect = document.getElementById('filter-duedate-select');
-            const vendorSelect = document.getElementById('filter-vendor-select');
-            const brandSelect = document.getElementById('filter-brand-select');
-            const invoiceSelect = document.getElementById('filter-invoice-select');
-            const sortSelect = document.getElementById('bill-sort-select');
+            const dueDateFilter = document.getElementById('filter-duedate')?.value || 'all';
+            const vendorFilter = document.getElementById('filter-vendor')?.value || 'all';
+            const brandFilter = document.getElementById('filter-brand')?.value || 'all';
+            const invoiceFilter = document.getElementById('filter-invoice')?.value || 'all';
+            const sortVal = document.getElementById('bill-sort-select')?.value || 'default';
             const tbody = document.getElementById('bills-table-tbody');
             if (!tbody) return;
 
-            const dueDateVal = dueDateSelect ? dueDateSelect.value : 'all';
-            const vendorVal = vendorSelect ? vendorSelect.value : 'all';
-            const brandVal = brandSelect ? brandSelect.value : 'all';
-            const invoiceVal = invoiceSelect ? invoiceSelect.value : 'all';
-            const sortVal = sortSelect ? sortSelect.value : 'default';
-
             const todayStr = new Date().toISOString().split('T')[0];
             const todayDate = new Date(todayStr);
+
+            const now = new Date();
+            const startOfWeek = new Date(now);
+            startOfWeek.setDate(now.getDate() - now.getDay());
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 6);
 
             let filtered = dbState.bills.filter(b => {
                 const bal = getBillBalance(b);
                 const isPaid = bal <= 0;
 
-                // 1. Sectional Tab filter (All, Paid, Unpaid)
                 if (currentBillTab === 'paid' && !isPaid) return false;
                 if (currentBillTab === 'unpaid' && isPaid) return false;
 
-                // 2. Due Date Filter
-                if (dueDateVal === 'today' && b.dueDate !== todayStr) return false;
-                if (dueDateVal === 'tomorrow' && b.dueDate !== getTomorrowStr()) return false;
-                if (dueDateVal === '2days' && b.dueDate) {
+                if (vendorFilter !== 'all' && b.vendorId !== vendorFilter) return false;
+
+                if (brandFilter !== 'all' && (!b.brands || !b.brands.includes(brandFilter))) return false;
+
+                if (invoiceFilter !== 'all' && b.billNo !== invoiceFilter) return false;
+
+                if (dueDateFilter === 'today' && b.dueDate !== todayStr) return false;
+                if (dueDateFilter === 'tomorrow' && b.dueDate !== getTomorrowStr()) return false;
+                if (dueDateFilter === '2days' && b.dueDate) {
                     const dueDateObj = new Date(b.dueDate);
                     const diffDays = Math.ceil((dueDateObj - todayDate) / (1000 * 60 * 60 * 24));
                     if (diffDays !== 2) return false;
                 }
-                if (dueDateVal === 'custom') {
-                    const fromDate = document.getElementById('bill-from-date')?.value;
-                    const toDate = document.getElementById('bill-to-date')?.value;
+                if (dueDateFilter === 'custom') {
+                    const fromDate = document.getElementById('filter-from-date')?.value;
+                    const toDate = document.getElementById('filter-to-date')?.value;
                     if (fromDate && b.dueDate < fromDate) return false;
                     if (toDate && b.dueDate > toDate) return false;
                 }
 
-                // 3. Vendor Name Filter
-                if (vendorVal !== 'all' && b.vendorId !== vendorVal) return false;
-
-                // 4. Brand Name Filter
-                if (brandVal !== 'all' && !(b.brands || []).includes(brandVal)) return false;
-
-                // 5. Invoice Number Filter
-                if (invoiceVal !== 'all' && b.billNo !== invoiceVal) return false;
-
                 return true;
             });
 
-            // Sorting logic
             if (sortVal === 'price-low-high') {
                 filtered.sort((a, b) => Number(a.amount) - Number(b.amount));
             } else if (sortVal === 'price-high-low') {
@@ -1978,6 +2104,13 @@
                     dueStatusHtml = `<span class="text-slate-400 font-bold text-center block">-</span>`;
                 }
 
+                let noteDisplay = b.notes || '-';
+                const linkedCredits = dbState.credits.filter(c => c.billId === b.id);
+                if (linkedCredits.length > 0) {
+                    const cnSummary = linkedCredits.map(c => `CN #${c.creditNo}: ₹${c.amount}`).join(', ');
+                    noteDisplay += ` <span class="text-[10px] text-purple-600 font-semibold">(${cnSummary})</span>`;
+                }
+
                 return `
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                         <td class="p-3.5 font-semibold text-slate-900 dark:text-white">${vendor?.name || 'Unknown'}</td>
@@ -1997,9 +2130,9 @@
                         </td>
                         <td class="p-3.5 text-center whitespace-nowrap">
                             <div class="inline-flex items-center space-x-1">
-                                ${!isPaid ? `<button onclick="openModal('paymentModal'); document.getElementById('pVendorId').value='${b.vendorId}'; updateVendorBillsDropdown(); document.getElementById('pBillId').value='${b.id}'; document.getElementById('pAmount').value='${bal}';" class="px-2 py-1 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 font-semibold hover:bg-brand-100 transition cursor-pointer" title="Pay Bill">Pay</button>` : `<span class="inline-block w-[34px]"></span>`}
+                                ${!isPaid ? `<button onclick="checkAdminAction(() => { openModal('paymentModal'); document.getElementById('pVendorId').value='${b.vendorId}'; updateVendorBillsDropdown(); document.getElementById('pBillId').value='${b.id}'; document.getElementById('pAmount').value='${bal}'; })" class="px-2 py-1 rounded bg-brand-50 dark:bg-brand-950/40 text-brand-600 dark:text-brand-400 font-semibold hover:bg-brand-100 transition cursor-pointer" title="Pay Bill">Pay</button>` : `<span class="inline-block w-[34px]"></span>`}
                                 <button onclick="triggerEditBill('${b.id}')" class="px-2 py-1 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold hover:bg-brand-50 hover:text-brand-600 transition cursor-pointer" title="Edit Bill">Edit</button>
-                                ${currentUserRole === 'admin' ? `<button onclick="deleteBill('${b.id}')" class="p-1 rounded text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Delete Bill"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : ''}
+                                ${currentUserRole === 'admin' ? `<button onclick="deleteBill('${b.id}')" class="p-1 rounded text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Delete Bill"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : `<span class="text-slate-300 dark:text-slate-700" title="Admin Only"><i data-lucide="lock" class="w-3.5 h-3.5 inline"></i></span>`}
                             </div>
                         </td>
                     </tr>
@@ -2027,7 +2160,7 @@
                         <td class="p-3.5 text-slate-600 dark:text-slate-300">${bill ? '#' + bill.billNo : 'General / On Account'}</td>
                         <td class="p-3.5 text-right font-bold text-emerald-600">${formatCurrency(p.amount)}</td>
                         <td class="p-3.5 text-center">
-                            <button onclick="deletePayment('${p.id}')" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 transition cursor-pointer"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            ${currentUserRole === 'admin' ? `<button onclick="deletePayment('${p.id}')" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Delete Payment"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : `<span class="text-slate-300 dark:text-slate-700" title="Admin Only"><i data-lucide="lock" class="w-3.5 h-3.5 inline"></i></span>`}
                         </td>
                     </tr>
                 `;
@@ -2037,24 +2170,41 @@
 
         function renderCreditsTable() {
             const tbody = document.getElementById('credits-table-tbody');
-            if (dbState.credits.length === 0) {
+            const vQuery = (document.getElementById('credit-search-vendor')?.value || '').toLowerCase();
+            const bQuery = (document.getElementById('credit-search-brand')?.value || '').toLowerCase();
+
+            let filtered = dbState.credits.filter(c => {
+                const vendor = dbState.vendors.find(v => v.id === c.vendorId);
+                const vName = vendor ? vendor.name.toLowerCase() : '';
+                if (vQuery && !vName.includes(vQuery)) return false;
+
+                if (bQuery) {
+                    const bill = dbState.bills.find(b => b.id === c.billId);
+                    const brandStr = bill && bill.brands ? bill.brands.join(', ').toLowerCase() : '';
+                    if (!brandStr.includes(bQuery)) return false;
+                }
+                return true;
+            });
+
+            if (filtered.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">No credit notes found</td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = dbState.credits.map(c => {
+            tbody.innerHTML = filtered.map(c => {
                 const vendor = dbState.vendors.find(v => v.id === c.vendorId);
                 const bill = dbState.bills.find(b => b.id === c.billId);
+                const billBrands = bill && bill.brands ? ` [Brands: ${bill.brands.join(', ')}]` : '';
                 return `
                     <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40">
                         <td class="p-3.5 text-slate-500">${formatDateDDMMYYYY(c.date)}</td>
                         <td class="p-3.5 font-semibold text-slate-900 dark:text-white">${vendor?.name || 'Unknown'}</td>
                         <td class="p-3.5 text-slate-600 dark:text-slate-300">#${c.creditNo}</td>
-                        <td class="p-3.5 text-slate-600 dark:text-slate-300">${bill ? '#' + bill.billNo : 'General Adjustment'}</td>
+                        <td class="p-3.5 text-slate-600 dark:text-slate-300">${bill ? '#' + bill.billNo + billBrands : 'General Adjustment'}</td>
                         <td class="p-3.5 text-slate-500">${c.reason}</td>
                         <td class="p-3.5 text-right font-bold text-purple-600">${formatCurrency(c.amount)}</td>
                         <td class="p-3.5 text-center">
-                            <button onclick="deleteCredit('${c.id}')" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 transition cursor-pointer"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>
+                            ${currentUserRole === 'admin' ? `<button onclick="deleteCredit('${c.id}')" class="p-1 rounded-lg text-slate-400 hover:text-rose-600 transition cursor-pointer" title="Delete Credit Note"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i></button>` : `<span class="text-slate-300 dark:text-slate-700" title="Admin Only"><i data-lucide="lock" class="w-3.5 h-3.5 inline"></i></span>`}
                         </td>
                     </tr>
                 `;
