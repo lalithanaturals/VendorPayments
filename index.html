@@ -1352,7 +1352,7 @@
 
     <script>
         const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V8';
-        const APP_VERSION = 'v8.1';
+        const APP_VERSION = 'v8.2';
         // Your Google Sheet backup link (not secret – the secret word, typed once per phone, protects it)
         const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxImjPGaw5Udi0AXDky_2Mb5n55OKArSKOuSK98HESVu6fnxPMIIShhjqnNG2WmcH7s/exec';
         const DEFAULT_BRANDS = ['Lalitha Naturals'];
@@ -3466,6 +3466,7 @@
                 showToast('Could not connect: ' + (err.message || err), 'error');
                 return;
             }
+            appSettings.liveSyncDone = false;
             saveSettings();
             closeSheetSetup();
             renderSettings();
@@ -4888,7 +4889,8 @@
             setSyncDot('busy');
             if (manual) showToast('Syncing...');
             const sentSeq = changeSeq;
-            const pushing = !!appSettings.pendingBackup || manual;
+            // First live sync on this device (or anything waiting): send everything this device has
+            const pushing = !!appSettings.pendingBackup || manual || !appSettings.liveSyncDone;
             let more = false;
             try {
                 let body;
@@ -4915,6 +4917,7 @@
                 appSettings.lastBackupAt = new Date().toISOString();
                 appSettings.lastBackupError = '';
                 if (pushing && changeSeq === sentSeq && !more) appSettings.pendingBackup = false;
+                if (pushing && !more) appSettings.liveSyncDone = true;
                 saveSettings();
                 setSyncDot('ok');
                 if (manual) showToast('Synced – all devices up to date');
