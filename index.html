@@ -109,6 +109,12 @@
             }
             #vendor-ledger-view button, #vendor-ledger-view input { display: none !important; }
         }
+            /* Bills table fits the screen – no sideways scroll */
+        table.bills-fit th, table.bills-fit td { padding: 10px 8px; }
+        table.bills-fit th:first-child, table.bills-fit td:first-child { padding-left: 14px; }
+        table.bills-fit th:last-child, table.bills-fit td:last-child { padding-right: 14px; }
+        table.bills-fit td.col-vendor { min-width: 150px; max-width: 240px; overflow-wrap: anywhere; }
+        @media (max-width: 1535px) { table.bills-fit .col-received { display: none; } }
     </style>
 </head>
 <body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 transition-colors duration-200 flex flex-col">
@@ -202,10 +208,10 @@
             </aside>
 
             <!-- Content Area -->
-            <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 pb-28 md:p-8 bg-slate-50 dark:bg-slate-950">
+            <main class="flex-1 overflow-y-auto overflow-x-hidden p-3 pb-28 md:p-4 lg:p-5 bg-slate-50 dark:bg-slate-950">
                 
                 <!-- TAB 1: DASHBOARD -->
-                <section id="tab-dashboard" class="tab-content space-y-6 max-w-6xl mx-auto">
+                <section id="tab-dashboard" class="tab-content space-y-6 w-full">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white"><span class="admin-only">Dashboard Overview</span><span class="manager-only">Home</span></h2>
@@ -320,7 +326,7 @@
                 </section>
 
                 <!-- TAB 2: VENDORS & LEDGERS -->
-                <section id="tab-vendors" class="tab-content hidden space-y-6 max-w-7xl mx-auto">
+                <section id="tab-vendors" class="tab-content hidden space-y-6 w-full">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Vendors & Ledgers</h2>
@@ -370,7 +376,7 @@
                 </section>
 
                 <!-- TAB 3: BILLS ENTRY -->
-                <section id="tab-bills" class="tab-content hidden space-y-6 max-w-6xl mx-auto">
+                <section id="tab-bills" class="tab-content hidden space-y-6 w-full">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Bills & Invoices</h2>
@@ -408,6 +414,8 @@
                                 <span class="text-slate-400 font-medium">Sort By:</span>
                                 <select id="bill-sort-select" onchange="renderBillsTable()" class="bg-transparent font-semibold text-slate-900 dark:text-white border-none focus:outline-none cursor-pointer">
                                     <option value="default">Default</option>
+                                    <option value="date-new-old">Date: New to Old</option>
+                                    <option value="date-old-new">Date: Old to New</option>
                                     <option value="price-low-high">Price: Low to High</option>
                                     <option value="price-high-low">Price: High to Low</option>
                                 </select>
@@ -481,24 +489,24 @@
 
                     <div class="px-1">
                         <p id="bills-count" class="text-[11px] font-semibold text-slate-400"></p>
-                        <p class="md:hidden text-[10px] text-slate-400 mt-0.5">Tip: swipe a bill right to Pay, left to Delete, or hold it for more options.</p>
+                        <p class="xl:hidden text-[10px] text-slate-400 mt-0.5">Tip: swipe a bill right to Pay, left to Delete, or hold it for more options.</p>
                     </div>
                     <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm overflow-hidden">
-                        <div id="bills-cards" class="md:hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
-                        <div class="hidden md:block overflow-x-auto">
-                            <table class="w-full text-left border-collapse">
+                        <div id="bills-cards" class="xl:hidden divide-y divide-slate-100 dark:divide-slate-800"></div>
+                        <div class="hidden xl:block">
+                            <table class="w-full text-left border-collapse bills-fit">
                                 <thead>
                                     <tr class="bg-slate-50/70 dark:bg-slate-800/40 text-slate-400 text-[11px] font-semibold uppercase tracking-wider">
                                         <th class="p-3.5">Vendor</th>
                                         <th class="p-3.5">Bill No.</th>
                                         <th class="p-3.5">Brands</th>
                                         <th class="p-3.5 whitespace-nowrap">Bill Date</th>
-                                        <th class="p-3.5 whitespace-nowrap">Received</th>
+                                        <th class="p-3.5 whitespace-nowrap col-received">Received</th>
                                         <th class="p-3.5 whitespace-nowrap">Due Date</th>
-                                        <th class="admin-col p-3.5 whitespace-nowrap">Days / Due Status</th>
+                                        <th class="admin-col p-3.5 whitespace-nowrap">Due Status</th>
                                         <th class="p-3.5 text-right">Amount</th>
                                         <th class="admin-col p-3.5 text-right">Balance</th>
-                                        <th class="p-3.5 text-center">Attachment</th>
+                                        <th class="p-3.5 text-center">File</th>
                                         <th class="admin-col p-3.5 text-center">Status</th>
                                         <th class="p-3.5 text-center">Actions</th>
                                     </tr>
@@ -510,7 +518,7 @@
                 </section>
 
                 <!-- TAB 4: CREDIT NOTES -->
-                <section id="tab-credits" class="tab-content hidden space-y-6 max-w-6xl mx-auto">
+                <section id="tab-credits" class="tab-content hidden space-y-6 w-full">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Vendor Credit Notes</h2>
@@ -559,7 +567,7 @@
                 </section>
 
                 <!-- TAB 5: PAYMENTS -->
-                <section id="tab-payments" class="tab-content hidden space-y-6 max-w-6xl mx-auto">
+                <section id="tab-payments" class="tab-content hidden space-y-6 w-full">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
                         <div>
                             <h2 class="text-xl font-bold text-slate-900 dark:text-white">Payment Records</h2>
@@ -1068,6 +1076,7 @@
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-500 mb-1">Vendor *</label>
                         <select id="bVendorId" required class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white"></select>
+                        <button type="button" id="bNewVendorBtn" onclick="addVendorFromBill()" class="mt-1.5 text-[11px] text-brand-600 dark:text-brand-400 font-semibold hover:underline inline-flex items-center gap-1 py-1 cursor-pointer"><i data-lucide="user-plus" class="w-3.5 h-3.5"></i>New Vendor</button>
                     </div>
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bill / Invoice No *</label>
@@ -1352,7 +1361,7 @@
 
     <script>
         const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V8';
-        const APP_VERSION = 'v8.2';
+        const APP_VERSION = 'v8.3';
         // Your Google Sheet backup link (not secret – the secret word, typed once per phone, protects it)
         const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxImjPGaw5Udi0AXDky_2Mb5n55OKArSKOuSK98HESVu6fnxPMIIShhjqnNG2WmcH7s/exec';
         const DEFAULT_BRANDS = ['Lalitha Naturals'];
@@ -1632,6 +1641,7 @@
         function cancelModal(modalId) {
             if (modalId === 'staffModal') return;   // sign-in can only be closed by signing in
             closeModal(modalId);
+            if (modalId === 'vendorModal') endVendorFromBill();
             if (modalId === 'adminPinModal') {
                 pendingAdminAction = null;
                 document.getElementById('adminPinInput').value = '';
@@ -2183,6 +2193,20 @@
             });
         }
 
+        let vendorFromBill = false;
+        function addVendorFromBill() {
+            vendorFromBill = true;
+            openModal('vendorModal');
+            const vm = document.getElementById('vendorModal');
+            vm.style.zIndex = '65';
+            setTimeout(() => document.getElementById('vName')?.focus(), 80);
+        }
+        function endVendorFromBill() {
+            vendorFromBill = false;
+            const vm = document.getElementById('vendorModal');
+            if (vm) vm.style.zIndex = '';
+        }
+
         function handleVendorSubmit(e) {
             e.preventDefault();
             const editingId = document.getElementById('vendorId').value;
@@ -2215,10 +2239,18 @@
             });
             if (!ok) return;
             showToast(existingIdx >= 0 ? 'Vendor updated successfully' : 'Vendor added successfully');
+            const backToBill = vendorFromBill && existingIdx < 0;
             closeModal('vendorModal');
-            selectedVendorIdForLedger = id;
+            endVendorFromBill();
+            if (!backToBill) selectedVendorIdForLedger = id;
             refreshAll();
             renderVendorList();
+            if (backToBill) {
+                const sel = document.getElementById('bVendorId');
+                if (sel) { sel.value = id; sel.dispatchEvent(new Event('change')); }
+                if (typeof saveBillDraft === 'function') try { saveBillDraft(); } catch (e) {}
+                setTimeout(() => document.getElementById('bBillNo')?.focus(), 80);
+            }
         }
 
         /* ---------- Bills ---------- */
@@ -2829,6 +2861,7 @@
                             <span class="text-slate-400">To:</span>
                             <input type="date" id="ledger-to-date" value="${ledgerToDate}" onchange="setLedgerDateFilter()" class="bg-transparent border-none text-slate-900 dark:text-white text-[11px] focus:outline-none">
                         </div>
+                        <button onclick="openBillForVendor('${vendor.id}')" class="px-3 py-1.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer"><i data-lucide="file-plus" class="w-3.5 h-3.5"></i><span>Record New Bill</span></button>
                         <button onclick="editVendor('${vendor.id}')" class="px-3 py-1.5 rounded-xl ${btnCls} text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">${lockIcon || '<i data-lucide="pencil" class="w-3.5 h-3.5"></i>'}<span>Edit Vendor</span></button>
                         <button onclick="checkAdminAction(() => openModal('ledgerFormatModal'))" title="Download Statement" class="px-3 py-1.5 rounded-xl ${btnCls} text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">${lockIcon || '<i data-lucide="download" class="w-3.5 h-3.5"></i>'}<span>Statement</span></button>
                         <button onclick="checkAdminAction(downloadAllVendorsMultiSheetExcel)" title="Download All Vendors (Multi-Sheet Excel)" class="px-3 py-1.5 rounded-xl ${adminView ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : btnCls} text-xs font-semibold flex items-center space-x-1.5 transition cursor-pointer">${lockIcon || '<i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>'}<span>All Vendors Excel</span></button>
@@ -3061,6 +3094,7 @@
 
             if (sortVal === 'price-low-high') filtered.sort((a, b) => Number(a.amount) - Number(b.amount));
             else if (sortVal === 'price-high-low') filtered.sort((a, b) => Number(b.amount) - Number(a.amount));
+            else if (sortVal === 'date-old-new') filtered.sort((a, b) => (a.billDate || '').localeCompare(b.billDate || '') || (a.billNo || '').localeCompare(b.billNo || '', undefined, { numeric: true }));
             else filtered.sort((a, b) => (b.billDate || '').localeCompare(a.billDate || ''));
 
             const countEl = document.getElementById('bills-count');
@@ -3094,16 +3128,16 @@
 
             tbody.innerHTML = rowData.map(r => `
                 <tr class="hover:bg-slate-50/60 dark:hover:bg-slate-800/40" data-kind="bill" data-id="${r.b.id}">
-                    <td class="p-3.5 font-semibold text-slate-900 dark:text-white">${esc(r.vendor?.name || 'Unknown')}${r.b.notes || r.cnHtml ? `<div class="text-[10px] text-slate-400 font-normal mt-0.5">${esc(r.b.notes || '')} ${r.cnHtml}</div>` : ''}<div class="font-normal">${addedByHtml(r.b)}</div></td>
+                    <td class="p-3.5 font-semibold text-slate-900 dark:text-white col-vendor">${esc(r.vendor?.name || 'Unknown')}${r.b.notes || r.cnHtml ? `<div class="text-[10px] text-slate-400 font-normal mt-0.5">${esc(r.b.notes || '')} ${r.cnHtml}</div>` : ''}<div class="font-normal">${addedByHtml(r.b)}</div></td>
                     <td class="p-3.5 text-slate-600 dark:text-slate-300 whitespace-nowrap">#${esc(r.b.billNo)}</td>
                     <td class="p-3.5">${r.branchTag}${r.brandTags}</td>
                     <td class="p-3.5 text-slate-500 whitespace-nowrap">${friendlyDate(r.b.billDate)}</td>
-                    <td class="p-3.5 text-slate-500 whitespace-nowrap">${friendlyDate(r.b.receivedDate)}</td>
+                    <td class="p-3.5 text-slate-500 whitespace-nowrap col-received">${friendlyDate(r.b.receivedDate)}</td>
                     <td class="p-3.5 font-medium text-amber-600 dark:text-amber-400 whitespace-nowrap">${friendlyDate(r.b.dueDate)}</td>
                     <td class="admin-col p-3.5 whitespace-nowrap">${r.dueStatusHtml}</td>
                     <td class="p-3.5 text-right text-slate-900 dark:text-white whitespace-nowrap">${formatCurrency(r.b.amount)}</td>
                     <td class="admin-col p-3.5 text-right font-bold whitespace-nowrap ${r.isPaid ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(r.bal)}</td>
-                    <td class="p-3.5 text-center">${(r.b.photo || r.b.photoKey) ? `<button onclick="viewAttachment('${r.b.id}')" class="text-brand-600 hover:underline font-semibold cursor-pointer">View</button>` : '<span class="text-slate-400">-</span>'}</td>
+                    <td class="p-3.5 text-center">${(r.b.photo || r.b.photoKey) ? `<button onclick="viewAttachment('${r.b.id}')" class="p-1.5 rounded text-brand-600 hover:bg-brand-50 cursor-pointer" title="View attachment"><i data-lucide="paperclip" class="w-4 h-4"></i></button>` : '<span class="text-slate-400">-</span>'}</td>
                     <td class="admin-col p-3.5 text-center">${r.statusPill}</td>
                     <td class="p-3.5 text-center whitespace-nowrap"><div class="inline-flex items-center space-x-1">${r.payBtn || '<span class="inline-block w-[34px]"></span>'}${r.editBtn}${r.delBtn}</div></td>
                 </tr>
@@ -4196,7 +4230,7 @@
                         ${vendor.address ? `<p class="text-[11px] text-slate-400">${esc(vendor.address)}</p>` : ''}
                     </div>
                     <div class="flex flex-wrap gap-2">
-                        <button onclick="openBillForVendor('${vendor.id}')" class="px-3.5 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-semibold inline-flex items-center gap-1.5"><i data-lucide="file-plus" class="w-4 h-4"></i>Add bill</button>
+                        <button onclick="openBillForVendor('${vendor.id}')" class="px-3.5 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-semibold inline-flex items-center gap-1.5"><i data-lucide="file-plus" class="w-4 h-4"></i>Record New Bill</button>
                         ${vendor.phone ? `<a href="tel:${esc(vendor.phone.replace(/[^0-9+]/g, ''))}" class="px-3.5 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold inline-flex items-center gap-1.5"><i data-lucide="phone" class="w-4 h-4"></i>Call</a>` : ''}
                         <button onclick="editVendor('${vendor.id}')" class="px-3.5 py-2.5 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-500 text-xs font-semibold inline-flex items-center gap-1.5"><i data-lucide="lock" class="w-4 h-4"></i>Edit vendor</button>
                     </div>
@@ -4211,7 +4245,8 @@
 
         function openBillForVendor(vendorId) {
             openModal('billModal');
-            document.getElementById('bVendorId').value = vendorId;
+            const setV = () => { const el = document.getElementById('bVendorId'); if (el) el.value = vendorId; };
+            setV(); setTimeout(setV, 0);
         }
 
         function openPayForBill(billId) {
