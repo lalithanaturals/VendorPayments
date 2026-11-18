@@ -125,8 +125,9 @@
         <header class="pt-safe bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 shrink-0 z-20 shadow-sm">
           <div class="px-3 md:px-6 py-3 flex items-center justify-between gap-2">
             <div class="flex items-center space-x-2.5 min-w-0">
-                <div id="app-logo" title="Hold for Admin" class="h-9 w-9 shrink-0 rounded-xl overflow-hidden shadow-md shadow-brand-600/20 select-none">
-                    <img src="icon-192.png" alt="" class="h-full w-full" draggable="false">
+                <div id="app-logo" title="Tap to sync · Hold for Admin" class="relative h-9 w-9 shrink-0 select-none cursor-pointer">
+                    <img src="icon-192.png" alt="" class="h-full w-full rounded-xl shadow-md shadow-brand-600/20" draggable="false">
+                    <span id="sync-dot" class="hidden"></span>
                 </div>
                 <div class="min-w-0 flex items-center gap-2">
                     <h1 class="leading-none"><img src="logo.png" alt="Lalitha Naturals" class="h-8 md:h-9 w-auto dark:brightness-110" draggable="false"><span class="sr-only">Lalitha Naturals Payables</span></h1>
@@ -909,11 +910,11 @@
                             <div id="sheet-view" class="space-y-2.5">
                                 <p class="text-[11px] font-semibold text-slate-500">Google Sheet (free)</p>
                                 <div class="flex gap-2">
-                                    <button type="button" onclick="checkAdminAction(() => backupToSheet(true))" class="flex-1 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5"><i data-lucide="upload-cloud" class="w-4 h-4"></i>Back up now</button>
+                                    <button type="button" onclick="checkAdminAction(() => backupToSheet(true))" class="flex-1 py-2.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5"><i data-lucide="upload-cloud" class="w-4 h-4"></i>Sync now</button>
                                     <button type="button" onclick="checkAdminAction(restoreFromSheet)" class="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-semibold inline-flex items-center justify-center gap-1.5"><i data-lucide="download-cloud" class="w-4 h-4"></i>Restore</button>
                                 </div>
                                 <label class="flex items-center justify-between gap-3 cursor-pointer py-1">
-                                    <span class="text-xs text-slate-700 dark:text-slate-300">Back up automatically after every change</span>
+                                    <span class="text-xs text-slate-700 dark:text-slate-300">Sync automatically (keeps all devices the same)</span>
                                     <input type="checkbox" id="set-autobackup" onchange="setSetting('autoBackup', this.checked)" class="w-5 h-5 rounded text-brand-600 focus:ring-brand-500 shrink-0">
                                 </label>
                                 <button type="button" onclick="checkAdminAction(openSheetSetup)" class="text-[11px] font-semibold text-brand-600 hover:underline">Change Google Sheet link</button>
@@ -1351,7 +1352,7 @@
 
     <script>
         const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V8';
-        const APP_VERSION = 'v8.0';
+        const APP_VERSION = 'v8.1';
         // Your Google Sheet backup link (not secret – the secret word, typed once per phone, protects it)
         const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxImjPGaw5Udi0AXDky_2Mb5n55OKArSKOuSK98HESVu6fnxPMIIShhjqnNG2WmcH7s/exec';
         const DEFAULT_BRANDS = ['Lalitha Naturals'];
@@ -1425,6 +1426,7 @@
             loadData();
             loadSettings();
             applySettings();
+            normalizeState();
             const ver = document.getElementById('app-version');
             if (ver) ver.innerText = APP_VERSION;
             document.getElementById('adminPinInput').addEventListener('keydown', e => {
@@ -1439,8 +1441,7 @@
             }));
             // Light tick on every button press
             document.addEventListener('click', e => { if (e.target.closest('button')) haptic('tap'); }, true);
-            window.addEventListener('online', () => { if (appSettings.pendingBackup) backupToSheet(false); updateBackupStatus(); });
-            window.addEventListener('offline', updateBackupStatus);
+
             matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change', () => { if (appSettings.theme === 'auto') applySettings(); });
             registerServiceWorker();
             setupGestures();
@@ -1476,6 +1477,7 @@
             }
             setupLogoHold();
             setupAutoLock();
+            setupSync();
             applyRoleView();
             switchTab(startTab);
             if (askPinOnOpen) openPinModal('Unlock to open as Admin.'); else requireStaffSignIn();
@@ -1484,11 +1486,6 @@
             if (params.get('action') === 'bill') openModal('billModal');
             if (params.get('action') === 'payment') openModal('paymentModal');
             if (params.has('tab') || params.has('action')) history.replaceState(null, '', location.pathname);
-            // Weekly safety backup when the app is opened
-            if (sheetReady() && navigator.onLine) {
-                const last = appSettings.lastBackupAt ? new Date(appSettings.lastBackupAt).getTime() : 0;
-                if (appSettings.pendingBackup || Date.now() - last > 7 * 86400000) setTimeout(() => backupToSheet(false), 3000);
-            }
             updateBackupStatus();
         };
 
@@ -1513,12 +1510,15 @@
 
         // Returns true when the data really reached storage
         function saveData() {
+            // Mark what changed since the last save (new/edited records get a time, removed ones a delete-mark)
+            stampChanges(syncBase, dbState);
             try {
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(dbState));
             } catch (e) {
                 console.error('Save failed', e);
                 return false;
             }
+            syncBase = sharedView(dbState);
             populateVendorDropdowns();
             populateBrandDropdowns();
             populateAdvancedFilterDropdowns();
@@ -1526,7 +1526,6 @@
             return true;
         }
 
-        // Apply a change; if it cannot be saved, roll it back so nothing is half-saved
         function commit(mutator) {
             const before = JSON.stringify(dbState);
             mutator();
@@ -2143,22 +2142,27 @@
             document.getElementById('billPhotoPreview').classList.add('hidden');
             const label = document.getElementById('billPhotoLabel');
             if (label) label.innerText = 'Attachment ready';
+            editingPhotoKey = '';
         }
 
-        function viewAttachment(billId) {
+        async function viewAttachment(billId) {
             const bill = dbState.bills.find(b => b.id === billId);
-            if (!bill || !bill.photo) {
+            if (!bill || (!bill.photo && !bill.photoKey)) {
                 showToast('No attachment found', 'error');
                 return;
             }
+            if (bill.photo) { renderAttachment(bill.photo, bill.billNo); openModal('previewModal'); return; }
+            // Photo was added on another device: fetch it from the Google Sheet only when needed
             const container = document.getElementById('previewContainer');
-            if (bill.photo.startsWith('data:image')) {
-                container.innerHTML = `<img src="${bill.photo}" class="max-w-full rounded-xl shadow-md" style="touch-action: pinch-zoom;">`;
-            } else {
-                container.innerHTML = `<div class="w-full space-y-3"><iframe src="${bill.photo}" class="w-full h-[60vh] rounded-xl bg-white"></iframe>
-                    <a href="${bill.photo}" download="Bill_${esc(bill.billNo)}.pdf" class="block text-center text-xs font-semibold text-brand-600">Open / download PDF</a></div>`;
-            }
+            container.innerHTML = `<div class="py-16 text-center text-xs text-slate-400"><i data-lucide="loader-2" class="w-6 h-6 mx-auto mb-2 animate-spin"></i>Loading photo...</div>`;
             openModal('previewModal');
+            try {
+                const data = await fetchPhoto(bill.photoKey);
+                if (document.getElementById('previewModal').classList.contains('hidden')) return;
+                renderAttachment(data, bill.billNo);
+            } catch (err) {
+                container.innerHTML = `<div class="py-16 text-center text-xs text-slate-500">${navigator.onLine ? 'Could not load the photo: ' + esc(err.message || err) : 'This photo is on another device. Connect to the internet to view it.'}</div>`;
+            }
         }
 
         /* ---------- Vendors ---------- */
@@ -2242,7 +2246,8 @@
             document.getElementById('bAmount').value = bill.amount;
             document.getElementById('bNotes').value = bill.notes || '';
             document.getElementById('bPhotoBase64').value = bill.photo || '';
-            if (bill.photo) document.getElementById('billPhotoPreview').classList.remove('hidden');
+            editingPhotoKey = bill.photo ? '' : (bill.photoKey || '');
+            if (bill.photo || bill.photoKey) document.getElementById('billPhotoPreview').classList.remove('hidden');
             renderBillBrandCheckboxes(bill.brands || []);
         }
 
@@ -2280,6 +2285,7 @@
             }
 
             const record = { id, vendorId, billNo, branch, brands, billDate, receivedDate, dueDate, amount, photo, notes };
+            if (!photo && editingPhotoKey && editingId) record.photoKey = editingPhotoKey;
             const existingIdx = dbState.bills.findIndex(b => b.id === id);
             if (existingIdx >= 0) { record.addedBy = dbState.bills[existingIdx].addedBy; record.editedBy = stamp(); } else record.addedBy = stamp();
             const ok = commit(() => {
@@ -3097,7 +3103,7 @@
                     <td class="admin-col p-3.5 whitespace-nowrap">${r.dueStatusHtml}</td>
                     <td class="p-3.5 text-right text-slate-900 dark:text-white whitespace-nowrap">${formatCurrency(r.b.amount)}</td>
                     <td class="admin-col p-3.5 text-right font-bold whitespace-nowrap ${r.isPaid ? 'text-emerald-600' : 'text-rose-600'}">${formatCurrency(r.bal)}</td>
-                    <td class="p-3.5 text-center">${r.b.photo ? `<button onclick="viewAttachment('${r.b.id}')" class="text-brand-600 hover:underline font-semibold cursor-pointer">View</button>` : '<span class="text-slate-400">-</span>'}</td>
+                    <td class="p-3.5 text-center">${(r.b.photo || r.b.photoKey) ? `<button onclick="viewAttachment('${r.b.id}')" class="text-brand-600 hover:underline font-semibold cursor-pointer">View</button>` : '<span class="text-slate-400">-</span>'}</td>
                     <td class="admin-col p-3.5 text-center">${r.statusPill}</td>
                     <td class="p-3.5 text-center whitespace-nowrap"><div class="inline-flex items-center space-x-1">${r.payBtn || '<span class="inline-block w-[34px]"></span>'}${r.editBtn}${r.delBtn}</div></td>
                 </tr>
@@ -3122,7 +3128,7 @@
                     <div class="flex items-center gap-2 pt-1">
                         ${r.isPaid || !adminView ? '' : `<button onclick="openPayForBill('${r.b.id}')" class="flex-1 py-2.5 rounded-xl bg-brand-600 text-white text-xs font-semibold active:scale-95 transition">Pay</button>`}
                         <button onclick="triggerEditBill('${r.b.id}')" class="flex-1 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold active:scale-95 transition">Edit</button>
-                        ${r.b.photo ? `<button onclick="viewAttachment('${r.b.id}')" class="px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold active:scale-95 transition" title="View attachment"><i data-lucide="paperclip" class="w-4 h-4"></i></button>` : ''}
+                        ${(r.b.photo || r.b.photoKey) ? `<button onclick="viewAttachment('${r.b.id}')" class="px-3 py-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold active:scale-95 transition" title="View attachment"><i data-lucide="paperclip" class="w-4 h-4"></i></button>` : ''}
                         ${adminView ? `<button onclick="deleteBill('${r.b.id}')" class="px-3 py-2.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 text-xs font-semibold active:scale-95 transition" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>` : ''}
                     </div>
                 </div>
@@ -3380,15 +3386,9 @@
             return { app: 'LN-Payables', version: APP_VERSION, exportedAt: new Date().toISOString(), data: dbState };
         }
 
-        function scheduleAutoBackup() {
-            if (!sheetReady()) return;
-            appSettings.pendingBackup = true;
-            saveSettings();
-            updateBackupStatus();
-            if (!appSettings.autoBackup) return;
-            if (autoBackupTimer) clearTimeout(autoBackupTimer);
-            autoBackupTimer = setTimeout(() => backupToSheet(false), 8000);
-        }
+        function scheduleAutoBackup() { scheduleSync(); }
+
+        // Kept for older buttons: "Back up" now means "sync with the Google Sheet"
 
         function sheetPost(body) {
             // text/plain avoids a CORS pre-flight that Apps Script can't answer
@@ -3396,36 +3396,7 @@
                 .then(r => r.json());
         }
 
-        async function backupToSheet(manual) {
-            if (!sheetReady()) { if (manual) { switchTab('settings'); showToast('Connect a Google Sheet first', 'error'); } return false; }
-            if (!navigator.onLine) {
-                appSettings.pendingBackup = true; saveSettings(); updateBackupStatus();
-                if (manual) showToast('No internet – backup will run when you are back online', 'error');
-                return false;
-            }
-            if (backupRunning) return false;
-            backupRunning = true;
-            if (manual) showToast('Backing up to Google Sheet...');
-            try {
-                const res = await sheetPost({ action: 'backup', key: appSettings.sheetKey, device: appSettings.deviceName || (navigator.userAgent.includes('iPhone') ? 'iPhone' : navigator.platform || 'device'), data: backupPayload() });
-                if (!res || !res.ok) throw new Error(res && res.error ? res.error : 'No reply from Google');
-                appSettings.lastBackupAt = new Date().toISOString();
-                appSettings.lastBackupError = '';
-                appSettings.pendingBackup = false;
-                saveSettings();
-                if (manual) showToast('Backed up to Google Sheet');
-                return true;
-            } catch (err) {
-                appSettings.lastBackupError = String(err.message || err);
-                appSettings.pendingBackup = true;
-                saveSettings();
-                if (manual) showToast('Backup failed: ' + appSettings.lastBackupError, 'error');
-                return false;
-            } finally {
-                backupRunning = false;
-                updateBackupStatus();
-            }
-        }
+        function backupToSheet(manual) { return syncNow(manual); }
 
         async function restoreFromSheet() {
             if (!sheetReady()) { showToast('Connect a Google Sheet first', 'error'); return; }
@@ -3451,7 +3422,7 @@
             const d = validBackup(payload);
             if (!d) { showToast('That is not a Lalitha Naturals Payables backup', 'error'); return; }
             askDelete('Replace all data with this backup?',
-                `${label}: ${d.vendors.length} vendors, ${d.bills.length} bills, ${d.payments.length} payments, ${d.credits.length} credit notes. Everything on this phone now will be replaced (you can Undo for 5 seconds).`,
+                `${label}: ${d.vendors.length} vendors, ${d.bills.length} bills, ${d.payments.length} payments, ${d.credits.length} credit notes. Everything now in the app will be replaced – on all synced devices (you can Undo for 5 seconds).`,
                 () => {
                     dbState = JSON.parse(JSON.stringify(d));
                     ['vendors', 'bills', 'payments', 'credits'].forEach(k => { if (!Array.isArray(dbState[k])) dbState[k] = []; });
@@ -3511,14 +3482,15 @@
 
         function updateBackupStatus() {
             let txt;
-            if (!sheetReady()) txt = 'Google Sheet not connected. Save a backup file now and then, or connect a sheet below.';
-            else if (!navigator.onLine && appSettings.pendingBackup) txt = 'Offline – changes will back up when internet returns.';
-            else if (appSettings.lastBackupError && appSettings.pendingBackup) txt = `Last backup failed (${appSettings.lastBackupError}). Will retry.`;
-            else if (appSettings.pendingBackup) txt = `Changes waiting to back up. Last backup: ${formatWhen(appSettings.lastBackupAt)}.`;
-            else txt = `All changes backed up. Last backup: ${formatWhen(appSettings.lastBackupAt)}.`;
+            if (!sheetReady()) txt = 'Google Sheet not connected. This device keeps its own data until you connect it below.';
+            else if (!navigator.onLine) txt = appSettings.pendingBackup ? 'Offline – your changes will sync when internet returns.' : 'Offline – showing the data from the last sync.';
+            else if (appSettings.lastBackupError) txt = `Last sync failed (${appSettings.lastBackupError}). Will retry.`;
+            else if (appSettings.pendingBackup) txt = `Changes waiting to sync. Last sync: ${formatWhen(appSettings.lastBackupAt)}.`;
+            else txt = `All devices in sync. Last sync: ${formatWhen(appSettings.lastBackupAt)}.`;
             const el = document.getElementById('backup-status'); if (el) el.innerText = txt;
             const side = document.getElementById('backup-status-side');
-            if (side) side.innerText = sheetReady() ? (appSettings.pendingBackup ? 'Backup pending' : `Backed up ${formatWhen(appSettings.lastBackupAt)}`) : 'No cloud backup';
+            if (side) side.innerText = sheetReady() ? (appSettings.pendingBackup ? 'Sync pending' : `Synced ${formatWhen(appSettings.lastBackupAt)}`) : 'Not syncing';
+            updateSyncDot();
         }
 
         /* ---------- Backup file ---------- */
@@ -3865,13 +3837,13 @@
                 const items = [];
                 if (!isAdmin()) {
                     items.push(['lock', 'Edit bill (Admin PIN)', () => triggerEditBill(id)]);
-                    if (b.photo) items.push(['paperclip', 'View attachment', () => viewAttachment(id)]);
+                    if (b.photo || b.photoKey) items.push(['paperclip', 'View attachment', () => viewAttachment(id)]);
                     if (v && v.phone) items.push(['phone', 'Call ' + v.name, () => { location.href = 'tel:' + v.phone.replace(/[^0-9+]/g, ''); }]);
                     return { title: `Bill #${b.billNo} · ${v ? v.name : ''}`, items };
                 }
                 if (getBillBalance(b) > 0) items.push(['indian-rupee', 'Pay this bill', () => openPayForBill(id)]);
                 items.push(['pencil', 'Edit bill', () => triggerEditBill(id)]);
-                if (b.photo) items.push(['paperclip', 'View attachment', () => viewAttachment(id)]);
+                if (b.photo || b.photoKey) items.push(['paperclip', 'View attachment', () => viewAttachment(id)]);
                 if (v && v.phone) items.push(['phone', 'Call ' + v.name, () => { location.href = 'tel:' + v.phone.replace(/[^0-9+]/g, ''); }]);
                 items.push(['book-open', 'Open vendor ledger', () => { selectedVendorIdForLedger = b.vendorId; switchTab('vendors'); }]);
                 items.push(['trash-2', 'Delete bill', () => deleteBill(id), true]);
@@ -4770,6 +4742,282 @@
                 </div>`;
             refreshIcons();
         }
+
+        function renderAttachment(data, billNo) {
+            const container = document.getElementById('previewContainer');
+            if (data.startsWith('data:image')) {
+                container.innerHTML = `<img src="${data}" class="max-w-full rounded-xl shadow-md" style="touch-action: pinch-zoom;">`;
+            } else {
+                container.innerHTML = `<div class="w-full space-y-3"><iframe src="${data}" class="w-full h-[60vh] rounded-xl bg-white"></iframe>
+                    <a href="${data}" download="Bill_${esc(billNo)}.pdf" class="block text-center text-xs font-semibold text-brand-600">Open / download PDF</a></div>`;
+            }
+        }
+
+        /* ---------- Live sync (all devices share the data through your Google Sheet) ---------- */
+
+        let syncBase = null;               // last saved/synced copy, used to see what changed
+        let syncing = false, syncAgain = false, syncTimer = null, syncDotState = 'off', changeSeq = 0;
+        let editingPhotoKey = '';
+        const photoCache = {};
+
+        function fnvStr(s) { let h = 2166136261; for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0).toString(36); }
+        function photoHash(p) { return 'ph' + p.length.toString(36) + fnvStr(p.slice(0, 3000) + p.slice(-3000)); }
+
+        // A copy of a record without the photo itself (photos travel separately)
+        function stripPhotos(r) {
+            if (!r || typeof r !== 'object') return r;
+            let o = r;
+            if (r.photo) { o = Object.assign({}, r, { photoKey: photoHash(r.photo) }); delete o.photo; }
+            if (o.item && o.item.photo) {
+                const item = Object.assign({}, o.item, { photoKey: photoHash(o.item.photo) }); delete item.photo;
+                o = Object.assign({}, o, { item });
+            }
+            return o;
+        }
+        function sharedView(state) {
+            const out = {};
+            Object.keys(SYNC_KEYS).forEach(c => out[c] = (state[c] || []).map(stripPhotos));
+            SYNC_LISTS.forEach(k => { if (state[k] !== undefined) out[k] = JSON.parse(JSON.stringify(state[k])); });
+            out.meta = Object.assign({}, state.meta || {});
+            out.deleted = Object.assign({}, state.deleted || {});
+            return out;
+        }
+        function recSig(r) { const o = Object.assign({}, stripPhotos(r)); delete o.updatedAt; return JSON.stringify(o); }
+
+        function stampChanges(prev, cur) {
+            if (!prev || !cur) return;
+            const now = new Date().toISOString();
+            if (!cur.deleted || typeof cur.deleted !== 'object') cur.deleted = {};
+            if (!cur.meta || typeof cur.meta !== 'object') cur.meta = {};
+            let changed = false;
+            Object.keys(SYNC_KEYS).forEach(c => {
+                const key = SYNC_KEYS[c], pm = {}, seen = {};
+                (prev[c] || []).forEach(r => { if (r && r[key]) pm[r[key]] = recSig(r); });
+                (cur[c] || []).forEach(r => {
+                    if (!r || !r[key]) return;
+                    seen[r[key]] = 1;
+                    if (r.photo) r.photoKey = photoHash(r.photo);
+                    if (pm[r[key]] === undefined || pm[r[key]] !== recSig(r)) {
+                        r.updatedAt = now;
+                        delete cur.deleted[c + ':' + r[key]];
+                        changed = true;
+                    }
+                });
+                Object.keys(pm).forEach(id => { if (!seen[id]) { cur.deleted[c + ':' + id] = now; changed = true; } });
+            });
+            SYNC_LISTS.forEach(k => { if (JSON.stringify(prev[k]) !== JSON.stringify(cur[k])) { cur.meta[k] = now; changed = true; } });
+            if (changed) changeSeq++;
+        }
+
+        // Photos from records that won the merge but came without the photo: reuse the copy on this device
+        function reattachPhotos(merged, local) {
+            const lp = {};
+            (local.bills || []).forEach(b => { if (b.photo) lp[photoHash(b.photo)] = b.photo; });
+            (local.trash || []).forEach(t => { if (t.item && t.item.photo) lp[photoHash(t.item.photo)] = t.item.photo; });
+            (merged.bills || []).forEach(b => { if (!b.photo && b.photoKey && lp[b.photoKey]) b.photo = lp[b.photoKey]; });
+            (merged.trash || []).forEach(t => { if (t.item && !t.item.photo && t.item.photoKey && lp[t.item.photoKey]) t.item = Object.assign({}, t.item, { photo: lp[t.item.photoKey] }); });
+        }
+
+        function normalizeState() {
+            ['vendors', 'bills', 'payments', 'credits'].forEach(k => { if (!Array.isArray(dbState[k])) dbState[k] = []; });
+            if (!Array.isArray(dbState.brands) || dbState.brands.length === 0) dbState.brands = DEFAULT_BRANDS.slice();
+            if (!Array.isArray(dbState.branches) || dbState.branches.length === 0) dbState.branches = DEFAULT_BRANCHES.slice();
+            if (!Array.isArray(dbState.staff)) dbState.staff = [];
+            if (!Array.isArray(dbState.trash)) dbState.trash = [];
+            if (!dbState.deleted || typeof dbState.deleted !== 'object') dbState.deleted = {};
+            if (!dbState.meta || typeof dbState.meta !== 'object') dbState.meta = {};
+            ensureConfig();
+        }
+
+        function applyRemote(remote) {
+            if (!remote) return;
+            const before = JSON.stringify(sharedView(dbState));
+            const local = dbState;
+            const merged = mergeStates(local, remote);   // keeps anything changed here while the sync was running
+            reattachPhotos(merged, local);
+            dbState = merged;
+            normalizeState();
+            try { localStorage.setItem(STORAGE_KEY, JSON.stringify(dbState)); } catch (e) { console.warn('Could not store synced data', e); }
+            syncBase = sharedView(dbState);
+            if (JSON.stringify(sharedView(dbState)) !== before) {
+                if (selectedVendorIdForLedger && !dbState.vendors.some(v => v.id === selectedVendorIdForLedger)) selectedVendorIdForLedger = null;
+                populateVendorDropdowns(); populateBrandDropdowns(); populateAdvancedFilterDropdowns(); populatePaymentModes();
+                refreshAll();
+                if (currentTab === 'vendors') renderVendorList();
+                if (currentTab === 'settings') renderSettings();
+            }
+        }
+
+        function serverPhotos() {
+            try { return new Set(JSON.parse(localStorage.getItem('LN_PAYABLES_SERVER_PHOTOS') || '[]')); } catch (e) { return new Set(); }
+        }
+        function saveServerPhotos(keys) {
+            try { localStorage.setItem('LN_PAYABLES_SERVER_PHOTOS', JSON.stringify(keys || [])); } catch (e) {}
+        }
+
+        function scheduleSync(delay = 2500) {
+            if (!sheetReady()) { updateSyncDot(); return; }
+            appSettings.pendingBackup = true;
+            saveSettings();
+            updateBackupStatus();
+            if (!appSettings.autoBackup) return;
+            clearTimeout(syncTimer);
+            syncTimer = setTimeout(() => syncNow(false), delay);
+        }
+
+        function syncErrorText(msg) {
+            if (/Unknown action/i.test(msg)) return 'Update the Google Sheet script (new apps-script.gs) and deploy a new version';
+            if (/Wrong secret/i.test(msg)) return 'Wrong secret word – check Settings → Backup & Sync';
+            if (/Failed to fetch|NetworkError|Load failed/i.test(msg)) return 'Could not reach Google – check internet';
+            return msg;
+        }
+
+        async function syncNow(manual) {
+            if (!sheetReady()) {
+                if (manual) showToast('Connect your Google Sheet first (Settings → Backup & Sync)', 'error');
+                updateSyncDot();
+                return false;
+            }
+            if (!navigator.onLine) {
+                updateBackupStatus();
+                if (manual) showToast('No internet – will sync when you are back online', 'error');
+                return false;
+            }
+            if (syncing) { syncAgain = true; return false; }
+            syncing = true;
+            setSyncDot('busy');
+            if (manual) showToast('Syncing...');
+            const sentSeq = changeSeq;
+            const pushing = !!appSettings.pendingBackup || manual;
+            let more = false;
+            try {
+                let body;
+                if (pushing) {
+                    const photos = {}, have = serverPhotos();
+                    let size = 0;
+                    const withPhotos = (dbState.bills || []).concat((dbState.trash || []).map(t => t.item || {}));
+                    withPhotos.forEach(b => {
+                        if (!b || !b.photo) return;
+                        const k = photoHash(b.photo);
+                        if (have.has(k) || photos[k]) return;
+                        if (size > 0 && size + b.photo.length > 3000000) { more = true; return; }
+                        photos[k] = b.photo; size += b.photo.length;
+                    });
+                    body = { action: 'sync', key: appSettings.sheetKey, device: appSettings.deviceName || '', state: sharedView(dbState), photos };
+                } else {
+                    body = { action: 'sync', key: appSettings.sheetKey, check: true, knownRev: appSettings.syncRev || 0 };
+                }
+                const res = await sheetPost(body);
+                if (!res || !res.ok) throw new Error(res && res.error ? res.error : 'No reply from Google');
+                if (res.photoKeys) saveServerPhotos(res.photoKeys);
+                if (!res.same && res.state) applyRemote(res.state);
+                appSettings.syncRev = res.rev || 0;
+                appSettings.lastBackupAt = new Date().toISOString();
+                appSettings.lastBackupError = '';
+                if (pushing && changeSeq === sentSeq && !more) appSettings.pendingBackup = false;
+                saveSettings();
+                setSyncDot('ok');
+                if (manual) showToast('Synced – all devices up to date');
+                return true;
+            } catch (err) {
+                appSettings.lastBackupError = syncErrorText(String(err.message || err));
+                saveSettings();
+                setSyncDot('error');
+                if (manual) showToast('Sync failed: ' + appSettings.lastBackupError, 'error');
+                return false;
+            } finally {
+                syncing = false;
+                updateBackupStatus();
+                if (!appSettings.lastBackupError && (syncAgain || more || (appSettings.pendingBackup && changeSeq !== sentSeq))) {
+                    syncAgain = false;
+                    clearTimeout(syncTimer);
+                    syncTimer = setTimeout(() => syncNow(false), 1200);
+                }
+                syncAgain = false;
+            }
+        }
+
+        async function fetchPhoto(key) {
+            if (photoCache[key]) return photoCache[key];
+            if (!sheetReady()) throw new Error('Google Sheet not connected');
+            const res = await sheetPost({ action: 'getPhotos', key: appSettings.sheetKey, keys: [key] });
+            if (!res || !res.ok) throw new Error(syncErrorText(res && res.error ? res.error : 'No reply'));
+            if (!res.photos || !res.photos[key]) throw new Error('photo not found in the Google Sheet yet');
+            photoCache[key] = res.photos[key];
+            return photoCache[key];
+        }
+
+        // Small coloured dot on the logo: green = in sync, amber = syncing/waiting, grey = offline, red = problem
+        function setSyncDot(state) { syncDotState = state; updateSyncDot(); }
+        function updateSyncDot() {
+            const dot = document.getElementById('sync-dot');
+            if (!dot) return;
+            let st = syncDotState;
+            if (!sheetReady()) st = 'off';
+            else if (!navigator.onLine) st = 'offline';
+            else if (st !== 'busy' && appSettings.lastBackupError) st = 'error';
+            else if (st !== 'busy' && appSettings.pendingBackup) st = 'pending';
+            else if (st === 'off') st = 'ok';
+            const cls = { ok: 'bg-emerald-500', busy: 'bg-amber-400 animate-pulse', pending: 'bg-amber-400', offline: 'bg-slate-400', error: 'bg-rose-500' }[st];
+            dot.className = 'absolute -bottom-1 -right-1 h-3.5 w-3.5 rounded-full ring-2 ring-white dark:ring-slate-900 ' + (cls || 'hidden');
+            dot.title = { ok: 'All devices in sync', busy: 'Syncing...', pending: 'Changes waiting to sync', offline: 'Offline', error: 'Sync problem – see Settings' }[st] || '';
+        }
+
+        function setupSync() {
+            syncBase = sharedView(dbState);
+            const logo = document.getElementById('app-logo');
+            if (logo) logo.addEventListener('click', () => { if (sheetReady()) syncNow(true); });
+            setInterval(() => {
+                if (document.visibilityState === 'visible' && sheetReady() && navigator.onLine && appSettings.autoBackup !== false) syncNow(false);
+            }, 60000);
+            document.addEventListener('visibilitychange', () => {
+                if (document.visibilityState === 'visible' && sheetReady() && navigator.onLine) syncNow(false);
+            });
+            window.addEventListener('online', () => { updateBackupStatus(); if (sheetReady()) syncNow(false); });
+            window.addEventListener('offline', updateBackupStatus);
+            updateSyncDot();
+            if (sheetReady() && navigator.onLine) setTimeout(() => syncNow(false), 800);
+        }
+
+        // ===== Shared by the app and the Google Sheet script – keep both copies identical =====
+        // Merges two copies of the data record by record: newest edit wins, deletes (tombstones) win over older edits.
+        const SYNC_KEYS = { vendors: 'id', bills: 'id', payments: 'id', credits: 'id', staff: 'id', trash: 'tid' };
+        const SYNC_LISTS = ['brands', 'branches', 'config'];
+        function mergeStates(a, b) {
+          a = a || {}; b = b || {};
+          const del = Object.assign({}, a.deleted || {});
+          Object.keys(b.deleted || {}).forEach(function (k) { if (!del[k] || b.deleted[k] > del[k]) del[k] = b.deleted[k]; });
+          const out = {};
+          Object.keys(SYNC_KEYS).forEach(function (c) {
+            const key = SYNC_KEYS[c], m = {}, order = [];
+            (a[c] || []).forEach(function (r) { if (r && r[key] && !m[r[key]]) { m[r[key]] = r; order.push(r[key]); } });
+            (b[c] || []).forEach(function (r) {
+              if (!r || !r[key]) return;
+              const cur = m[r[key]];
+              if (!cur) { m[r[key]] = r; order.push(r[key]); }
+              else if ((r.updatedAt || '') > (cur.updatedAt || '')) m[r[key]] = r;
+            });
+            out[c] = order.map(function (id) { return m[id]; }).filter(function (r) {
+              const t = del[c + ':' + r[key]];
+              return !t || (r.updatedAt || '') > t;
+            });
+          });
+          const ma = a.meta || {}, mb = b.meta || {};
+          out.meta = {};
+          SYNC_LISTS.forEach(function (k) {
+            const ta = ma[k] || '', tb = mb[k] || '';
+            let useB = tb > ta || (tb === ta && a[k] === undefined);
+            if (useB && b[k] === undefined) useB = false;
+            out[k] = useB ? b[k] : a[k];
+            out.meta[k] = ta > tb ? ta : tb;
+          });
+          const cutoff = new Date(Date.now() - 120 * 864e5).toISOString();
+          Object.keys(del).forEach(function (k) { if (del[k] < cutoff) delete del[k]; });
+          out.deleted = del;
+          return out;
+        }
+        // ===== end shared =====
+        
     </script>
 </body>
 </html>

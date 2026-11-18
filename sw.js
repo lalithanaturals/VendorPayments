@@ -1,6 +1,6 @@
 /* Lalitha Naturals Payables – offline support.
    Change CACHE_VERSION on every release so phones pick up the new app. */
-const CACHE_VERSION = 'ln-payables-v8.0';
+const CACHE_VERSION = 'ln-payables-v8.1';
 const APP_SHELL = ['./', './index.html', './manifest.json', './icon-192.png', './icon-512.png', './icon-180.png', './icon-maskable-512.png', './logo.png'];
 const CDN_LIBS = [
     'https://cdn.tailwindcss.com',
