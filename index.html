@@ -45,6 +45,8 @@
         body { font-family: 'Inter', sans-serif; overscroll-behavior: none; }
         /* iPhone: no grey tap flash, no double-tap zoom, no accidental text-select on buttons */
         * { -webkit-tap-highlight-color: transparent; }
+        #billForm :disabled { opacity: .45; cursor: not-allowed; }
+        #billForm.dup-locked #bBillNo { box-shadow: 0 0 0 2px #e11d48; }
         html, body, button, a, label, select { touch-action: manipulation; }
         button, label, .nav-btn, .mnav-btn { -webkit-user-select: none; user-select: none; }
         button:active { transform: scale(0.97); }
@@ -1082,6 +1084,7 @@
                     <div>
                         <label class="block text-[11px] font-semibold text-slate-500 mb-1">Bill / Invoice No *</label>
                         <input type="text" id="bBillNo" required class="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs border-none focus:ring-2 focus:ring-brand-500 text-slate-900 dark:text-white" placeholder="INV-001">
+                        <p id="bBillNoDupMsg" class="hidden mt-1 text-[11px] font-semibold text-rose-600">Already recorded for this vendor – enter a different number</p>
                     </div>
                 </div>
                 <div>
@@ -1504,9 +1507,16 @@
             document.getElementById('billForm').addEventListener('change', saveBillDraft);
             // Warn as soon as an invoice number that already exists for the vendor is entered.
             // Small delay so tapping Cancel/× on the bill form doesn't pop the warning.
-            const dupCheckSoon = () => setTimeout(checkDuplicateInvoice, 200);
-            document.getElementById('bBillNo').addEventListener('blur', dupCheckSoon);   // every time you leave the field
-            document.getElementById('bVendorId').addEventListener('change', dupCheckSoon);
+            const billNoInput = document.getElementById('bBillNo');
+            // While locked, re-check on every keystroke so fields unlock as soon as the number is fixed
+            billNoInput.addEventListener('input', () => { if (document.getElementById('billForm').classList.contains('dup-locked')) updateBillFieldLock(); });
+            billNoInput.addEventListener('blur', e => {
+                // Leaving the field: check right away (skip if the bill form itself is being closed)
+                const to = e.relatedTarget;
+                if (to && /cancelModal\('billModal'\)/.test(to.getAttribute('onclick') || '')) return;
+                checkDuplicateInvoice();
+            });
+            document.getElementById('bVendorId').addEventListener('change', checkDuplicateInvoice);
             const askPinOnOpen = appSettings.deviceRole === 'admin' && appSettings.lockOnOpen;
             if (appSettings.deviceRole === 'admin' && !askPinOnOpen) {
                 currentUserRole = 'admin';
@@ -1635,6 +1645,7 @@
                 clearBillPhoto();
                 if (!billEditOpening) setTimeout(restoreBillDraft, 0);
                 renderBillBrandCheckboxes();
+                setTimeout(updateBillFieldLock, 20);
             }
             if (modalId === 'paymentModal') {
                 document.getElementById('paymentForm').reset();
@@ -2315,6 +2326,7 @@
             editingPhotoKey = bill.photo ? '' : (bill.photoKey || '');
             if (bill.photo || bill.photoKey) document.getElementById('billPhotoPreview').classList.remove('hidden');
             renderBillBrandCheckboxes(bill.brands || []);
+            setTimeout(updateBillFieldLock, 30);
         }
 
         function handleBillSubmit(e) {
@@ -2379,8 +2391,20 @@
             const modal = document.getElementById('billModal');
             if (modal.classList.contains('hidden')) return;
             if (!document.getElementById('dupInvoiceModal').classList.contains('hidden')) return;
-            const dup = findDuplicateBill(document.getElementById('bVendorId').value, document.getElementById('bBillNo').value, document.getElementById('billId').value);
+            const dup = updateBillFieldLock();
             if (dup) openDuplicateInvoicePopup(dup);
+        }
+
+        // While the invoice number is a duplicate for this vendor, every other field
+        // (and Save) is disabled – only Vendor, Invoice No and Cancel keep working.
+        function updateBillFieldLock() {
+            const form = document.getElementById('billForm');
+            const dup = findDuplicateBill(document.getElementById('bVendorId').value, document.getElementById('bBillNo').value, document.getElementById('billId').value);
+            const keep = el => ['bVendorId', 'bBillNo', 'bNewVendorBtn', 'billId'].includes(el.id) || /cancelModal/.test(el.getAttribute('onclick') || '');
+            form.querySelectorAll('input, select, textarea, button').forEach(el => { if (!keep(el)) el.disabled = !!dup; });
+            form.classList.toggle('dup-locked', !!dup);
+            document.getElementById('bBillNoDupMsg').classList.toggle('hidden', !dup);
+            return dup;
         }
 
         function openDuplicateInvoicePopup(bill) {
