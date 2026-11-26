@@ -1505,7 +1505,7 @@
             // Warn as soon as an invoice number that already exists for the vendor is entered.
             // Small delay so tapping Cancel/× on the bill form doesn't pop the warning.
             const dupCheckSoon = () => setTimeout(checkDuplicateInvoice, 200);
-            document.getElementById('bBillNo').addEventListener('change', dupCheckSoon);
+            document.getElementById('bBillNo').addEventListener('blur', dupCheckSoon);   // every time you leave the field
             document.getElementById('bVendorId').addEventListener('change', dupCheckSoon);
             const askPinOnOpen = appSettings.deviceRole === 'admin' && appSettings.lockOnOpen;
             if (appSettings.deviceRole === 'admin' && !askPinOnOpen) {
