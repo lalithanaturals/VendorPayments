@@ -1341,6 +1341,24 @@
         </div>
     </div>
 
+    <!-- Duplicate invoice popup (shown while recording a bill) -->
+    <div id="dupInvoiceModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center sm:p-4 hidden modal-overlay">
+        <div class="bg-white dark:bg-slate-900 sheet rounded-t-3xl sm:rounded-2xl border border-slate-200 dark:border-slate-800 shadow-2xl max-w-sm w-full p-6 space-y-4">
+            <div class="flex items-start gap-3">
+                <div class="h-10 w-10 shrink-0 rounded-full bg-amber-100 dark:bg-amber-950/50 flex items-center justify-center"><i data-lucide="alert-triangle" class="w-5 h-5 text-amber-600"></i></div>
+                <div class="min-w-0">
+                    <h3 class="text-base font-bold text-slate-900 dark:text-white">Invoice already exists</h3>
+                    <p id="dupInvoiceMsg" class="text-xs text-slate-500 dark:text-slate-400 mt-1"></p>
+                </div>
+            </div>
+            <div id="dupInvoiceDetails" class="p-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-xs space-y-1.5"></div>
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-2">
+                <button type="button" onclick="cancelModal('dupInvoiceModal')" class="px-4 py-3 sm:py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">Cancel</button>
+                <button type="button" onclick="showDuplicateInvoice()" class="px-4 py-3 sm:py-2 rounded-xl bg-brand-600 hover:bg-brand-700 text-white text-xs font-semibold inline-flex items-center justify-center gap-1.5 cursor-pointer"><i data-lucide="file-search" class="w-3.5 h-3.5"></i>Show invoice</button>
+            </div>
+        </div>
+    </div>
+
     <!-- New version banner -->
     <div id="update-banner" class="hidden fixed top-0 inset-x-0 z-[80] pt-safe">
         <div class="m-3 md:mx-auto md:max-w-md bg-brand-600 text-white rounded-xl shadow-xl px-4 py-3 flex items-center gap-3 text-xs font-semibold">
@@ -1362,7 +1380,7 @@
 
     <script>
         const STORAGE_KEY = 'LALITHA_NATURALS_PAYABLES_V8';
-        const APP_VERSION = 'v8.4';
+        const APP_VERSION = 'v8.5';
         // Your Google Sheet backup link (not secret – the secret word, typed once per phone, protects it)
         const DEFAULT_SHEET_URL = 'https://script.google.com/macros/s/AKfycbxImjPGaw5Udi0AXDky_2Mb5n55OKArSKOuSK98HESVu6fnxPMIIShhjqnNG2WmcH7s/exec';
         const DEFAULT_BRANDS = ['Lalitha Naturals'];
@@ -1466,7 +1484,10 @@
             });
             try { const bv = localStorage.getItem('LN_PAYABLES_BRANCH_VIEW'); if (bv !== null && (bv === 'all' || bv === '' || dbState.branches.includes(bv))) currentBranch = bv; } catch (e) {}
             document.addEventListener('keydown', e => {
-                if (e.key === 'Escape') document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => cancelModal(m.id));
+                if (e.key !== 'Escape') return;
+                // The duplicate-invoice popup sits on top of the bill form: Esc closes only the popup
+                if (!document.getElementById('dupInvoiceModal').classList.contains('hidden')) { cancelModal('dupInvoiceModal'); return; }
+                document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => cancelModal(m.id));
             });
             // Tap on the dark backdrop closes a sheet
             document.querySelectorAll('.modal-overlay').forEach(m => m.addEventListener('click', e => { if (e.target === m) cancelModal(m.id); }));
@@ -1481,6 +1502,11 @@
             applyHomeLayout();
             document.getElementById('billForm').addEventListener('input', saveBillDraft);
             document.getElementById('billForm').addEventListener('change', saveBillDraft);
+            // Warn as soon as an invoice number that already exists for the vendor is entered.
+            // Small delay so tapping Cancel/× on the bill form doesn't pop the warning.
+            const dupCheckSoon = () => setTimeout(checkDuplicateInvoice, 200);
+            document.getElementById('bBillNo').addEventListener('change', dupCheckSoon);
+            document.getElementById('bVendorId').addEventListener('change', dupCheckSoon);
             const askPinOnOpen = appSettings.deviceRole === 'admin' && appSettings.lockOnOpen;
             if (appSettings.deviceRole === 'admin' && !askPinOnOpen) {
                 currentUserRole = 'admin';
@@ -1652,6 +1678,12 @@
                 setTimeout(requireStaffSignIn, 50);
             }
             if (modalId === 'deleteModal') pendingDelete = null;
+            if (modalId === 'dupInvoiceModal') {
+                // Back to the bill form so a different invoice number can be typed
+                dupInvoiceBill = null;
+                const inp = document.getElementById('bBillNo');
+                if (inp && !document.getElementById('billModal').classList.contains('hidden')) setTimeout(() => { inp.focus(); inp.select(); }, 50);
+            }
         }
 
         function toggleDarkMode() {
@@ -2307,9 +2339,8 @@
             if (brands.length === 0) return fail('Tick at least one brand');
             if (!(amount > 0)) return fail('Amount must be more than ₹0', 'bAmount');
             if (dueDate < billDate) return fail('Due date cannot be before the bill date', 'bDueDate');
-            if (dbState.bills.some(b => b.id !== id && b.vendorId === vendorId && b.billNo.trim().toLowerCase() === billNo.toLowerCase())) {
-                return fail(`Bill #${billNo} is already recorded for this vendor`, 'bBillNo');
-            }
+            const dupBill = findDuplicateBill(vendorId, billNo, id);
+            if (dupBill) { openDuplicateInvoicePopup(dupBill); return; }
             if (editingId) {
                 const old = dbState.bills.find(b => b.id === editingId);
                 const settled = old ? getBillPaid(old) : 0;
@@ -2332,6 +2363,74 @@
             showToast(existingIdx >= 0 ? 'Bill updated successfully' : 'Bill recorded successfully');
             closeModal('billModal');
             refreshAll();
+        }
+
+        /* ---------- Duplicate invoice check ---------- */
+
+        let dupInvoiceBill = null;
+        function findDuplicateBill(vendorId, billNo, excludeId) {
+            const no = (billNo || '').trim().toLowerCase();
+            if (!vendorId || !no) return null;
+            return dbState.bills.find(b => b.id !== excludeId && b.vendorId === vendorId && (b.billNo || '').trim().toLowerCase() === no) || null;
+        }
+
+        // Runs when the invoice number (or vendor) is entered in the bill form
+        function checkDuplicateInvoice() {
+            const modal = document.getElementById('billModal');
+            if (modal.classList.contains('hidden')) return;
+            if (!document.getElementById('dupInvoiceModal').classList.contains('hidden')) return;
+            const dup = findDuplicateBill(document.getElementById('bVendorId').value, document.getElementById('bBillNo').value, document.getElementById('billId').value);
+            if (dup) openDuplicateInvoicePopup(dup);
+        }
+
+        function openDuplicateInvoicePopup(bill) {
+            dupInvoiceBill = bill;
+            const v = dbState.vendors.find(x => x.id === bill.vendorId);
+            const bal = getBillBalance(bill);
+            const row = (k, val) => `<div class="flex justify-between gap-3"><span class="text-slate-500 dark:text-slate-400">${k}</span><span class="font-semibold text-slate-900 dark:text-white text-right">${val}</span></div>`;
+            document.getElementById('dupInvoiceMsg').innerHTML = `Invoice <b>#${esc(bill.billNo)}</b> is already recorded for <b>${esc(v ? v.name : 'this vendor')}</b>.`;
+            document.getElementById('dupInvoiceDetails').innerHTML =
+                row('Bill date', friendlyDate(bill.billDate)) +
+                row('Due date', friendlyDate(bill.dueDate)) +
+                (bill.branch ? row('Branch', esc(bill.branch)) : '') +
+                row('Amount', formatCurrency(bill.amount)) +
+                (isAdmin() ? row('Status', bal <= 0 ? '<span class="text-emerald-600">Paid</span>' : `<span class="text-rose-600">Unpaid · Bal ${formatCurrency(bal)}</span>`) : '');
+            openModal('dupInvoiceModal');
+            if (typeof haptic === 'function') try { haptic('warning'); } catch (e) {}
+        }
+
+        // "Show invoice": leave the new bill and jump to the existing one in Bills
+        function showDuplicateInvoice() {
+            const bill = dupInvoiceBill;
+            dupInvoiceBill = null;
+            closeModal('dupInvoiceModal');
+            closeModal('billModal');
+            if (!document.getElementById('billId').value) clearBillDraft();
+            if (!bill) return;
+            if (!billInBranch(bill)) setBranch('all');
+            switchTab('bills');
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.value = val; };
+            ['filter-vendor-search', 'filter-brand-search', 'filter-from-date', 'filter-to-date', 'bill-search'].forEach(id => set(id, ''));
+            ['filter-duedate', 'filter-brand', 'filter-addedby'].forEach(id => set(id, 'all'));
+            set('bill-sort-select', 'default');
+            filterVendorDropdown();
+            filterBrandDropdown();
+            toggleCustomDateRange();
+            populateAdvancedFilterDropdowns();
+            set('filter-vendor', bill.vendorId);
+            set('filter-invoice', bill.billNo);
+            document.getElementById('filter-panel')?.classList.remove('hidden');
+            setBillTab('all');
+            // Briefly highlight the bill so it's easy to spot
+            setTimeout(() => {
+                document.querySelectorAll(`[data-kind="bill"][data-id="${bill.id}"]`).forEach(el => {
+                    if (el.offsetParent === null) return;
+                    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    el.style.transition = 'box-shadow .3s';
+                    el.style.boxShadow = 'inset 0 0 0 2px #f59e0b';
+                    setTimeout(() => { el.style.boxShadow = ''; }, 2500);
+                });
+            }, 150);
         }
 
         /* ---------- Payments & credit notes ---------- */
